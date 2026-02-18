@@ -1,0 +1,10 @@
+- Ganti localStorage → database (PostgreSQL / SQLite)
+- Tambah login sederhana (supaya bisa multi-device)
+- Tambah koleksi kata bahasa Inggris
+- Tambah mini-game baru: menyusun huruf, mewarnai sambil belajar
+- Integrasi gambar asli (foto benda nyata) selain emoji
+- Rekam suara anak untuk tracking progress pengucapan dari waktu ke waktu
+- Tambah konten Islami: Surat-surat pendek (Al-Fatihah, Al-Ikhlas, An-Nas, Al-Falaq)
+- Tambah kisah Nabi dalam bentuk visual interaktif sederhana
+- Audio doa dari qari profesional (file MP3)
+- Mode Ramadhan khusus dengan konten dan tema bertema puasa
