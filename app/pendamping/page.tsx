@@ -3,15 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { useAppStore } from "@/store/useAppStore";
 import { Word } from "@/data/words";
 
@@ -87,10 +78,7 @@ export default function PendampingPage() {
 
   // Weekly chart data
   const dayLabels = getDayLabels();
-  const chartData = weeklyMinutes.map((minutes, index) => ({
-    name: dayLabels[index],
-    menit: minutes,
-  }));
+  const maxMinutes = Math.max(...weeklyMinutes, 1);
 
   // Streak calendar: last 7 days
   const last7Days = getLast7DaysDates();
@@ -281,31 +269,22 @@ export default function PendampingPage() {
             <h2 className="font-heading text-lg font-semibold text-gray-700 mb-4">
               Waktu Belajar Mingguan (menit)
             </h2>
-            <div className="w-full h-40 sm:h-48">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="name"
-                    tick={{ fontSize: 12 }}
-                    stroke="#9ca3af"
-                  />
-                  <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "8px",
-                      border: "1px solid #e5e7eb",
-                      fontSize: "13px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="menit"
-                    fill="#60A5FA"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={40}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="flex items-end justify-between gap-2 h-40 sm:h-48">
+              {weeklyMinutes.map((minutes, index) => {
+                const heightPct = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;
+                return (
+                  <div key={dayLabels[index]} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                    {minutes > 0 && (
+                      <span className="font-body text-xs text-gray-500">{minutes}</span>
+                    )}
+                    <div
+                      className="w-full max-w-[40px] bg-blue-400 rounded-t-md transition-all duration-500"
+                      style={{ height: `${Math.max(heightPct, minutes > 0 ? 8 : 0)}%` }}
+                    />
+                    <span className="font-body text-xs text-gray-500">{dayLabels[index]}</span>
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
 

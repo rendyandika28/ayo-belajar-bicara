@@ -8,50 +8,9 @@ import { speak } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import Link from "next/link";
 import FocusModeButton from "@/components/focus/FocusModeButton";
+import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 const TOTAL_QUESTIONS = 10;
-
-const CONFETTI_COLORS = [
-  "#FF6B6B", "#FFE66D", "#4ECDC4", "#45B7D1", "#96CEB4",
-  "#FFEAA7", "#DDA0DD", "#98D8C8", "#F7DC6F", "#BB8FCE",
-  "#85C1E9", "#F1948A", "#82E0AA", "#F8C471", "#AED6F1",
-];
-
-function Confetti() {
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 15 }, (_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-        delay: `${Math.random() * 1}s`,
-        size: Math.random() * 8 + 6,
-        rotation: Math.random() * 360,
-      })),
-    []
-  );
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {pieces.map((piece) => (
-        <div
-          key={piece.id}
-          className="absolute confetti-piece"
-          style={{
-            left: piece.left,
-            top: "-20px",
-            width: `${piece.size}px`,
-            height: `${piece.size * 1.5}px`,
-            backgroundColor: piece.color,
-            borderRadius: piece.size > 10 ? "50%" : "2px",
-            animationDelay: piece.delay,
-            transform: `rotate(${piece.rotation}deg)`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -241,7 +200,7 @@ export default function TebakGambarPage() {
 
     return (
       <div className="min-h-screen bg-pink-50 flex flex-col">
-        <Confetti />
+        <ConfettiEffect show={true} />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
@@ -294,7 +253,7 @@ export default function TebakGambarPage() {
 
   return (
     <div className="min-h-screen bg-pink-50 flex flex-col">
-      {showConfetti && <Confetti />}
+      <ConfettiEffect show={showConfetti} />
 
       {/* Header */}
       <div className="sticky top-0 z-40 bg-pink-50/90 backdrop-blur-sm px-4 pt-4 pb-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { dailyDoas } from "@/data/islamic";
@@ -9,40 +9,7 @@ import { speak, createSpeechRecognition, isSpeechRecognitionSupported } from "@/
 import { playPop, playApplause } from "@/lib/sounds";
 import StarCounter from "@/components/ui/StarCounter";
 import FocusModeButton from "@/components/focus/FocusModeButton";
-
-function Confetti() {
-  const pieces = useMemo(() => {
-    const colors = ["#10b981","#f59e0b","#ef4444","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316"];
-    return Array.from({ length: 15 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      color: colors[i % colors.length],
-      delay: Math.random() * 1,
-      size: 8 + Math.random() * 8,
-      round: Math.random() > 0.5,
-    }));
-  }, []);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {pieces.map((p) => (
-        <div
-          key={p.id}
-          className="confetti-piece absolute"
-          style={{
-            left: `${p.left}%`,
-            top: -20,
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-            borderRadius: p.round ? "50%" : "2px",
-            animationDelay: `${p.delay}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 export default function DoaHarianPage() {
   const { doasAttempted, markDoaAttempted, addStar } = useAppStore();
@@ -146,7 +113,7 @@ export default function DoaHarianPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      {showConfetti && <Confetti />}
+      <ConfettiEffect show={showConfetti} />
 
       <AnimatePresence mode="wait">
         {!selectedDoa ? (
@@ -271,7 +238,7 @@ export default function DoaHarianPage() {
               {/* Arabic text */}
               <div
                 className="bg-emerald-50 p-6 rounded-2xl mb-4"
-                dir="rtl"
+                dir="rtl" lang="ar"
               >
                 <p
                   className="text-3xl text-right text-emerald-900 leading-loose"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { speakIslamic } from "@/lib/speech";
@@ -9,6 +9,7 @@ import { hijaiyahLetters } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
 import StarCounter from "@/components/ui/StarCounter";
 import FocusModeButton from "@/components/focus/FocusModeButton";
+import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 type QuizQuestion = {
   correctLetter: (typeof hijaiyahLetters)[number];
@@ -37,46 +38,6 @@ function generateQuiz(count: number): QuizQuestion[] {
     questions.push({ correctLetter: correct, options });
   }
   return questions;
-}
-
-function Confetti() {
-  const pieces = useMemo(() => {
-    const colors = [
-      "#10b981",
-      "#f59e0b",
-      "#3b82f6",
-      "#ef4444",
-      "#8b5cf6",
-      "#ec4899",
-    ];
-    return Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      delay: Math.random() * 0.5,
-      size: Math.random() * 8 + 4,
-    }));
-  }, []);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50">
-      {pieces.map((p) => (
-        <div
-          key={p.id}
-          className="confetti-piece absolute"
-          style={{
-            left: `${p.left}%`,
-            top: -20,
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-            borderRadius: Math.random() > 0.5 ? "50%" : "2px",
-            animationDelay: `${p.delay}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
 }
 
 export default function HijaiyahPage() {
@@ -296,7 +257,7 @@ export default function HijaiyahPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
-        {showConfetti && <Confetti />}
+        <ConfettiEffect show={showConfetti} />
 
         {/* Top bar */}
         <div className="flex items-center justify-between mb-4">
@@ -412,7 +373,7 @@ export default function HijaiyahPage() {
                     <span
                       className="text-[64px] leading-none"
                       style={{ fontFamily: "var(--font-amiri)" }}
-                      dir="rtl"
+                      dir="rtl" lang="ar"
                     >
                       {option.letter}
                     </span>
@@ -493,7 +454,7 @@ export default function HijaiyahPage() {
                     fontFamily: "var(--font-amiri)",
                     fontSize: "clamp(80px, 20vw, 120px)",
                   }}
-                  dir="rtl"
+                  dir="rtl" lang="ar"
                   whileTap={{ scale: 1.15 }}
                   transition={{ type: "spring", stiffness: 400 }}
                 >

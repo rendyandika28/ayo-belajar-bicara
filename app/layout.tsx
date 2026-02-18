@@ -28,8 +28,24 @@ export const metadata: Metadata = {
     "Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!",
   manifest: "/manifest.json",
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌟</text></svg>",
+    icon: "/icons/icon.svg",
+    apple: "/icons/icon-192.svg",
   },
+  openGraph: {
+    title: "Ayo Belajar Bicara!",
+    description:
+      "Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!",
+    type: "website",
+    locale: "id_ID",
+    siteName: "Ayo Belajar Bicara",
+  },
+  twitter: {
+    card: "summary",
+    title: "Ayo Belajar Bicara!",
+    description:
+      "Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!",
+  },
+  category: "education",
 };
 
 export const viewport: Viewport = {

@@ -123,9 +123,10 @@ export function useFocusMode() {
     }
   }, [isFocusMode]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount — always exit fullscreen and reset state
   useEffect(() => {
     return () => {
+      exitFullscreen();
       document.body.classList.remove("focus-mode-active");
       stopFocusMode();
     };

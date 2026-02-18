@@ -135,6 +135,7 @@ export default function IslamiPage() {
                       : undefined
                   }
                   dir={card.iconStyle.includes("font-amiri") ? "rtl" : undefined}
+                  lang={card.iconStyle.includes("font-amiri") ? "ar" : undefined}
                 >
                   {card.icon}
                 </span>

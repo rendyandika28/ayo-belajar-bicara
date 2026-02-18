@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFocusStore } from "@/store/useFocusStore";
 import { useFocusMode } from "@/hooks/useFocusMode";
@@ -27,6 +27,7 @@ export default function FocusModeWrapper() {
   const stopFocusMode = useFocusStore((s) => s.stopFocusMode);
 
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const breakHandledRef = useRef(false);
 
   // Auto-reset exit step after 3 seconds
   useEffect(() => {
@@ -44,17 +45,27 @@ export default function FocusModeWrapper() {
     };
   }, [exitStep, resetExitStep]);
 
-  const handleBreakContinue = () => {
-    stopFocusMode();
-  };
+  // Track learning time once when break overlay appears
+  useEffect(() => {
+    if (showBreak && !breakHandledRef.current) {
+      breakHandledRef.current = true;
+      const appStore = useAppStore.getState();
+      appStore.addMinutes(focusDuration);
+      appStore.incrementSession();
+      appStore.setBreakTime(true);
+    }
+    if (!showBreak) {
+      breakHandledRef.current = false;
+    }
+  }, [showBreak, focusDuration]);
 
-  const handleBreakRest = () => {
-    // Track learning time when break starts
-    const appStore = useAppStore.getState();
-    appStore.addMinutes(focusDuration);
-    appStore.incrementSession();
-    appStore.setBreakTime(true);
-  };
+  const handleBreakContinue = useCallback(() => {
+    stopFocusMode();
+  }, [stopFocusMode]);
+
+  const handleBreakRest = useCallback(() => {
+    // Learning time already tracked via effect above
+  }, []);
 
   if (!isFocusMode) return null;
 

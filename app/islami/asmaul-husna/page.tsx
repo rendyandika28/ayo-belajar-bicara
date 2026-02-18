@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { asmaulHusna } from "@/data/islamic";
@@ -9,40 +9,7 @@ import { speak } from "@/lib/speech";
 import { playPop, playCelebration } from "@/lib/sounds";
 import StarCounter from "@/components/ui/StarCounter";
 import FocusModeButton from "@/components/focus/FocusModeButton";
-
-function Confetti() {
-  const pieces = useMemo(() => {
-    const colors = ["#10b981","#f59e0b","#ef4444","#3b82f6","#8b5cf6","#ec4899","#14b8a6","#f97316"];
-    return Array.from({ length: 15 }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      color: colors[i % colors.length],
-      delay: Math.random() * 1,
-      size: 8 + Math.random() * 8,
-      round: Math.random() > 0.5,
-    }));
-  }, []);
-
-  return (
-    <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {pieces.map((p) => (
-        <div
-          key={p.id}
-          className="confetti-piece absolute"
-          style={{
-            left: `${p.left}%`,
-            top: -20,
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-            borderRadius: p.round ? "50%" : "2px",
-            animationDelay: `${p.delay}s`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 export default function AsmaulHusnaPage() {
   const { asmaulHusnaLearned, markAsmaulHusnaLearned, addStar } = useAppStore();
@@ -128,7 +95,7 @@ export default function AsmaulHusnaPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      {showConfetti && <Confetti />}
+      <ConfettiEffect show={showConfetti} />
 
       {/* Top bar */}
       <div className="flex items-center justify-between mb-4">
@@ -194,7 +161,7 @@ export default function AsmaulHusnaPage() {
                 <p
                   className="text-4xl sm:text-5xl text-emerald-900 mb-4 leading-relaxed"
                   style={{ fontFamily: "var(--font-amiri)" }}
-                  dir="rtl"
+                  dir="rtl" lang="ar"
                 >
                   {currentItem.arabic}
                 </p>
