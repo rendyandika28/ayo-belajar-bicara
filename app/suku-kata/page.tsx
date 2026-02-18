@@ -7,6 +7,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { words, Word } from "@/data/words";
 import { speak, speakSyllable } from "@/lib/speech";
 import { playPop, playCorrect, playApplause } from "@/lib/sounds";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -47,8 +48,11 @@ function TopBar({
       >
         <span className="text-2xl">&#8592;</span> Kembali
       </button>
-      <div className="flex items-center gap-1 text-lg font-heading text-yellow-600 min-h-[48px]">
-        <span className="text-xl">&#11088;</span> {totalStars}
+      <div className="flex items-center gap-2">
+        <FocusModeButton />
+        <div className="flex items-center gap-1 text-lg font-heading text-yellow-600 min-h-[48px]">
+          <span className="text-xl">&#11088;</span> {totalStars}
+        </div>
       </div>
     </div>
   );

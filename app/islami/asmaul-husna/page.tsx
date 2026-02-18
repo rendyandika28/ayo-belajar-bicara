@@ -8,6 +8,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { speak } from "@/lib/speech";
 import { playPop, playCelebration } from "@/lib/sounds";
 import StarCounter from "@/components/ui/StarCounter";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 
 function Confetti() {
   const pieces = useMemo(() => {
@@ -146,7 +147,10 @@ export default function AsmaulHusnaPage() {
             Asmaul Husna {"✨"}
           </h1>
         </div>
-        <StarCounter />
+        <div className="flex items-center gap-2">
+          <FocusModeButton />
+          <StarCounter />
+        </div>
       </div>
 
       {/* Progress indicator */}

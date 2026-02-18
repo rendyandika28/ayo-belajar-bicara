@@ -8,6 +8,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { speak, createSpeechRecognition, isSpeechRecognitionSupported } from "@/lib/speech";
 import { playPop, playApplause } from "@/lib/sounds";
 import StarCounter from "@/components/ui/StarCounter";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 
 function Confetti() {
   const pieces = useMemo(() => {
@@ -174,7 +175,10 @@ export default function DoaHarianPage() {
                   Doa Harian {"🤲"}
                 </h1>
               </div>
-              <StarCounter />
+              <div className="flex items-center gap-2">
+                <FocusModeButton />
+                <StarCounter />
+              </div>
             </div>
 
             {/* Grid of doa cards */}

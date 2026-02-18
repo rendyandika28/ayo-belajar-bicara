@@ -8,6 +8,7 @@ import { playPop } from "@/lib/sounds";
 import { words, categories } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
 import StarCounter from "@/components/ui/StarCounter";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 
 export default function KartuKataPage() {
   const {
@@ -132,7 +133,10 @@ export default function KartuKataPage() {
           Kartu Kata
         </h1>
 
-        <StarCounter />
+        <div className="flex items-center gap-2">
+          <FocusModeButton />
+          <StarCounter />
+        </div>
       </div>
 
       {/* Category filter */}

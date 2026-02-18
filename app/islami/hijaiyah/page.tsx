@@ -8,6 +8,7 @@ import { playPop, playCorrect, playWrong } from "@/lib/sounds";
 import { hijaiyahLetters } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
 import StarCounter from "@/components/ui/StarCounter";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 
 type QuizQuestion = {
   correctLetter: (typeof hijaiyahLetters)[number];
@@ -450,7 +451,10 @@ export default function HijaiyahPage() {
           Huruf Hijaiyah
         </h1>
 
-        <StarCounter />
+        <div className="flex items-center gap-2">
+          <FocusModeButton />
+          <StarCounter />
+        </div>
       </div>
 
       {/* Card counter */}

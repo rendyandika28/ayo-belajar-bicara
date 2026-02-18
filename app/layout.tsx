@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito, Amiri } from "next/font/google";
+import ClientLayout from "@/components/ClientLayout";
 import "./globals.css";
 
 const fredoka = Fredoka({
@@ -49,7 +50,7 @@ export default function RootLayout({
       <body
         className={`${fredoka.variable} ${nunito.variable} ${amiri.variable} font-body antialiased`}
       >
-        {children}
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

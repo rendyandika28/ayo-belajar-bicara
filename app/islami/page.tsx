@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import StarCounter from "@/components/ui/StarCounter";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 import { useAppStore } from "@/store/useAppStore";
 
 const containerVariants = {
@@ -88,7 +89,10 @@ export default function IslamiPage() {
           </motion.button>
         </Link>
 
-        <StarCounter />
+        <div className="flex items-center gap-2">
+          <FocusModeButton />
+          <StarCounter />
+        </div>
       </div>
 
       {/* Title */}

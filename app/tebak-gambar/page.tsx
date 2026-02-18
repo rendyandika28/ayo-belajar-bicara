@@ -7,6 +7,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { speak } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import Link from "next/link";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 
 const TOTAL_QUESTIONS = 10;
 
@@ -314,12 +315,15 @@ export default function TebakGambarPage() {
             ⭐ {score}/{TOTAL_QUESTIONS}
           </div>
 
-          {/* Total stars */}
-          <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1.5 rounded-full">
-            <span className="text-lg">⭐</span>
-            <span className="font-heading font-bold text-yellow-700">
-              {totalStars}
-            </span>
+          {/* Focus + Total stars */}
+          <div className="flex items-center gap-2">
+            <FocusModeButton />
+            <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1.5 rounded-full">
+              <span className="text-lg">⭐</span>
+              <span className="font-heading font-bold text-yellow-700">
+                {totalStars}
+              </span>
+            </div>
           </div>
         </div>
 

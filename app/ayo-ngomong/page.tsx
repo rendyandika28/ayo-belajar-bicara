@@ -14,6 +14,7 @@ import {
 import { playCorrect, playPop, playApplause } from "@/lib/sounds";
 import { isMatch } from "@/lib/fuzzyMatch";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
+import FocusModeButton from "@/components/focus/FocusModeButton";
 
 const WORDS_PER_SESSION = 8;
 
@@ -281,9 +282,12 @@ export default function AyoNgomongPage() {
             🏠
           </motion.button>
         </Link>
-        <div className="bg-yellow-400 rounded-full px-4 py-2 shadow-lg flex items-center gap-2 font-heading text-lg">
-          <span className="text-xl">⭐</span>
-          <span className="font-bold">{totalStars}</span>
+        <div className="flex items-center gap-2">
+          <FocusModeButton />
+          <div className="bg-yellow-400 rounded-full px-4 py-2 shadow-lg flex items-center gap-2 font-heading text-lg">
+            <span className="text-xl">⭐</span>
+            <span className="font-bold">{totalStars}</span>
+          </div>
         </div>
       </div>
 
