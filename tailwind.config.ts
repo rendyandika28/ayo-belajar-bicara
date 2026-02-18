@@ -12,6 +12,11 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
+      fontFamily: {
+        heading: ["var(--font-fredoka)", "sans-serif"],
+        body: ["var(--font-nunito)", "sans-serif"],
+        arabic: ["var(--font-amiri)", "serif"],
+      },
     },
   },
   plugins: [],
