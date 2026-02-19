@@ -12,6 +12,7 @@ const menuItems = [
   { emoji: "\ud83d\udd24", label: "Suku Kata", href: "/suku-kata", bg: "bg-blue-200" },
   { emoji: "\ud83c\udfa4", label: "Ayo Ngomong", href: "/ayo-ngomong", bg: "bg-purple-200" },
   { emoji: "\ud83d\udd4c", label: "Islami", href: "/islami", bg: "bg-emerald-200" },
+  { emoji: "\ud83d\udd0a", label: "Tebak Suara", href: "/tebak-suara", bg: "bg-teal-200" },
 ];
 
 const containerVariants: Variants = {

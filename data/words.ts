@@ -88,7 +88,7 @@ export const words: Word[] = [
   { id: "isl-5", emoji: "🙏", word: "doa", syllables: ["do", "a"], category: "islami", difficulty: 1 },
   { id: "isl-6", emoji: "💧", word: "wudhu", syllables: ["wu", "dhu"], category: "islami", difficulty: 1 },
   { id: "isl-7", emoji: "🌙", word: "puasa", syllables: ["pu", "a", "sa"], category: "islami", difficulty: 2 },
-  { id: "isl-8", emoji: "🌿", word: "surga", syllables: ["sur", "ga"], category: "islami", difficulty: 1 },
+  { id: "isl-8", emoji: "🌈", word: "surga", syllables: ["sur", "ga"], category: "islami", difficulty: 1 },
   { id: "isl-9", emoji: "✨", word: "amin", syllables: ["a", "min"], category: "islami", difficulty: 1 },
   { id: "isl-10", emoji: "🌟", word: "bismillah", syllables: ["bis", "mil", "lah"], category: "islami", difficulty: 2 },
 ];
