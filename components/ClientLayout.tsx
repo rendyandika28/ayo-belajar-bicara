@@ -79,7 +79,7 @@ export default function ClientLayout({
             fontFamily: "Fredoka, sans-serif",
           }}
         >
-          <span style={{ fontSize: "2rem", flexShrink: 0 }}>📲</span>
+          <span style={{ fontSize: "2rem", flexShrink: 0 }}>{"\uD83D\uDCF2"}</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
@@ -125,7 +125,7 @@ export default function ClientLayout({
               flexShrink: 0,
             }}
           >
-            ✕
+            {"\u00D7"}
           </button>
         </div>
       )}

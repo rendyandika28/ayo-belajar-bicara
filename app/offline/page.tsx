@@ -15,7 +15,7 @@ export default function OfflinePage() {
         textAlign: "center",
       }}
     >
-      <div style={{ fontSize: "5rem", marginBottom: "1rem" }}>📡</div>
+      <div style={{ fontSize: "5rem", marginBottom: "1rem" }}>{"\uD83D\uDCE1"}</div>
       <h1
         style={{
           fontSize: "1.75rem",
