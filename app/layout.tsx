@@ -46,6 +46,11 @@ export const metadata: Metadata = {
       "Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!",
   },
   category: "education",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Belajar Bicara",
+  },
 };
 
 export const viewport: Viewport = {
