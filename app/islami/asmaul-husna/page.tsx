@@ -16,6 +16,7 @@ export default function AsmaulHusnaPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [showReward, setShowReward] = useState(false);
+  const [hasShownReward, setHasShownReward] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const learnedInSession = useRef<Set<string>>(new Set());
 
@@ -41,13 +42,14 @@ export default function AsmaulHusnaPage() {
 
   // Check if all viewed - show reward
   useEffect(() => {
-    if (learnedInSession.current.size === total && !showReward) {
+    if (learnedInSession.current.size === total && !hasShownReward) {
+      setHasShownReward(true);
       setShowReward(true);
       setShowConfetti(true);
       playCelebration();
       setTimeout(() => setShowConfetti(false), 3500);
     }
-  }, [currentIndex, total, showReward]);
+  }, [currentIndex, total, hasShownReward]);
 
   const goNext = useCallback(() => {
     if (currentIndex < total - 1) {
@@ -241,13 +243,23 @@ export default function AsmaulHusnaPage() {
               <p className="font-body text-emerald-600 mb-6">
                 Kamu sudah belajar semua 10 Asmaul Husna!
               </p>
-              <motion.button
-                onClick={() => setShowReward(false)}
-                className="bg-emerald-600 text-white font-heading text-lg px-8 py-3 rounded-2xl shadow-lg min-h-[52px] active:bg-emerald-700 transition-colors"
-                whileTap={{ scale: 0.95 }}
-              >
-                Lanjutkan
-              </motion.button>
+              <div className="flex flex-col gap-3">
+                <motion.button
+                  onClick={() => setShowReward(false)}
+                  className="w-full bg-emerald-600 text-white font-heading text-lg px-8 py-3 rounded-2xl shadow-lg active:bg-emerald-700 transition-colors"
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Lanjutkan Belajar
+                </motion.button>
+                <Link href="/islami" className="w-full">
+                  <motion.button
+                    className="w-full bg-white text-emerald-600 font-heading text-lg px-8 py-3 rounded-2xl shadow-md border-2 border-emerald-200 active:bg-emerald-50 transition-colors"
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    🏠 Menu Islami
+                  </motion.button>
+                </Link>
+              </div>
             </motion.div>
           </motion.div>
         )}
