@@ -260,10 +260,10 @@ export default function HijaiyahPage() {
         <ConfettiEffect show={showConfetti} />
 
         {/* Top bar */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="relative flex items-center justify-between mb-4">
           <motion.button
             onClick={exitQuiz}
-            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
+            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl z-10"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             aria-label="Keluar quiz"
@@ -271,11 +271,13 @@ export default function HijaiyahPage() {
             {"\u2b05\ufe0f"}
           </motion.button>
 
-          <h1 className="font-heading text-xl font-bold text-emerald-800">
+          <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-xl font-bold text-emerald-800 whitespace-nowrap pointer-events-none">
             Quiz Hijaiyah
           </h1>
 
-          <StarCounter />
+          <div className="z-10">
+            <StarCounter />
+          </div>
         </div>
 
         {/* Progress */}
@@ -371,7 +373,7 @@ export default function HijaiyahPage() {
                     disabled={selectedAnswer !== null}
                   >
                     <span
-                      className="text-[64px] leading-none"
+                      className="text-[52px] leading-normal"
                       style={{ fontFamily: "var(--font-amiri)" }}
                       dir="rtl" lang="ar"
                     >
@@ -396,8 +398,8 @@ export default function HijaiyahPage() {
       transition={{ duration: 0.3 }}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-4">
-        <Link href="/islami">
+      <div className="relative flex items-center justify-between mb-4">
+        <Link href="/islami" className="z-10">
           <motion.button
             className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
             whileHover={{ scale: 1.1 }}
@@ -408,11 +410,11 @@ export default function HijaiyahPage() {
           </motion.button>
         </Link>
 
-        <h1 className="font-heading text-xl sm:text-2xl font-bold text-emerald-800">
+        <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-xl sm:text-2xl font-bold text-emerald-800 whitespace-nowrap pointer-events-none">
           Huruf Hijaiyah
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 z-10">
           <FocusModeButton />
           <StarCounter />
         </div>
@@ -449,10 +451,10 @@ export default function HijaiyahPage() {
               >
                 {/* Arabic letter */}
                 <motion.span
-                  className="leading-none mb-2"
+                  className="leading-normal mb-4 mt-2"
                   style={{
                     fontFamily: "var(--font-amiri)",
-                    fontSize: "clamp(80px, 20vw, 120px)",
+                    fontSize: "clamp(60px, 15vw, 100px)",
                   }}
                   dir="rtl" lang="ar"
                   whileTap={{ scale: 1.15 }}

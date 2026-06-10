@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import StarCounter from "@/components/ui/StarCounter";
 import FocusModeButton from "@/components/focus/FocusModeButton";
 import { useAppStore } from "@/store/useAppStore";
+import { playPop } from "@/lib/sounds";
 
 const containerVariants = {
   hidden: {},
@@ -84,7 +85,8 @@ export default function IslamiPage() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             aria-label="Kembali ke beranda"
-          >
+          
+            onClick={playPop}>
             {"\ud83c\udfe0"}
           </motion.button>
         </Link>

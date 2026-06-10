@@ -22,7 +22,7 @@ describe("words data", () => {
   });
 
   it("has valid categories", () => {
-    const validCategories = ["hewan", "buah", "benda", "keluarga", "aktivitas", "makanan", "islami"];
+    const validCategories = ["hewan", "buah", "benda", "keluarga", "aktivitas", "makanan", "islami", "warna", "angka", "tubuh", "alam", "peralatan"];
     for (const word of words) {
       expect(validCategories).toContain(word.category);
     }

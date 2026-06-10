@@ -9,6 +9,7 @@ import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import Link from "next/link";
 import FocusModeButton from "@/components/focus/FocusModeButton";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
+import GameTutorial from "@/components/GameTutorial";
 
 const TOTAL_QUESTIONS = 10;
 
@@ -66,7 +67,9 @@ function generateQuestions(allWords: Word[]): { target: Word; options: Word[] }[
 type GamePhase = "playing" | "finished";
 
 export default function TebakGambarPage() {
-  const { totalStars, customWords, addStar, incrementSession } = useAppStore();
+  const { totalStars, customWords, addStar, incrementSession, recordGamePlay } = useAppStore();
+
+  useEffect(() => { recordGamePlay("tebak-gambar"); }, [recordGamePlay]);
 
   const allWords = useMemo(() => [...words, ...customWords], [customWords]);
 
@@ -253,13 +256,20 @@ export default function TebakGambarPage() {
 
   return (
     <div className="min-h-screen bg-pink-50 flex flex-col">
+      <GameTutorial
+        gameKey="tebak-gambar"
+        steps={[
+          { emoji: "\ud83d\udc42", text: "Dengarkan suara kata yang diputar, lalu perhatikan baik-baik." },
+          { emoji: "\ud83c\udfaf", text: "Pilih gambar yang sesuai dengan kata yang kamu dengar!" },
+        ]}
+      />
       <ConfettiEffect show={showConfetti} />
 
       {/* Header */}
       <div className="sticky top-0 z-40 bg-pink-50/90 backdrop-blur-sm px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-3">
+        <div className="relative flex items-center justify-between mb-3">
           {/* Back button */}
-          <Link href="/">
+          <Link href="/" className="z-10">
             <motion.div
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -270,12 +280,12 @@ export default function TebakGambarPage() {
           </Link>
 
           {/* Score */}
-          <div className="font-heading text-xl font-bold text-purple-700">
+          <div className="absolute left-1/2 -translate-x-1/2 font-heading text-xl font-bold text-purple-700 whitespace-nowrap pointer-events-none">
             ⭐ {score}/{TOTAL_QUESTIONS}
           </div>
 
           {/* Focus + Total stars */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 z-10">
             <FocusModeButton />
             <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1.5 rounded-full">
               <span className="text-lg">⭐</span>

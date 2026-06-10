@@ -9,6 +9,7 @@ import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import Link from "next/link";
 import FocusModeButton from "@/components/focus/FocusModeButton";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
+import GameTutorial from "@/components/GameTutorial";
 
 const SESSION_SIZE = 10;
 
@@ -29,7 +30,9 @@ interface Question {
 }
 
 export default function TebakSuaraPage() {
-  const { totalStars, addStar, incrementSession } = useAppStore();
+  const { totalStars, addStar, incrementSession, recordGamePlay } = useAppStore();
+
+  useEffect(() => { recordGamePlay("tebak-suara"); }, [recordGamePlay]);
 
   const [questions, setQuestions] = useState<Question[]>([]);
 
@@ -215,12 +218,19 @@ export default function TebakSuaraPage() {
 
   return (
     <div className="min-h-screen bg-teal-50 flex flex-col">
+      <GameTutorial
+        gameKey="tebak-suara"
+        steps={[
+          { emoji: "\ud83d\udd0a", text: "Dengarkan suara kata yang diputar. Ada tombol 'Dengar' untuk mengulang." },
+          { emoji: "\ud83e\udde0", text: "Tebak dengan memilih jawaban yang benar dari gambar yang tersedia!" },
+        ]}
+      />
       <ConfettiEffect show={showConfetti} />
 
       {/* Header */}
       <div className="sticky top-0 z-40 bg-teal-50/90 backdrop-blur-sm px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-3">
-          <Link href="/">
+        <div className="relative flex items-center justify-between mb-3">
+          <Link href="/" className="z-10">
             <motion.div
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -230,11 +240,11 @@ export default function TebakSuaraPage() {
             </motion.div>
           </Link>
 
-          <h1 className="font-heading text-xl font-bold text-teal-700">
+          <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-xl font-bold text-teal-700 whitespace-nowrap pointer-events-none">
             Tebak Suara! 🔊
           </h1>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 z-10">
             <FocusModeButton />
             <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1.5 rounded-full">
               <span className="text-lg">⭐</span>

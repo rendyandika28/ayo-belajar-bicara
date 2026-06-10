@@ -8,6 +8,7 @@ import { words, Word } from "@/data/words";
 import { speak, speakSyllable } from "@/lib/speech";
 import { playPop, playCorrect, playApplause } from "@/lib/sounds";
 import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameTutorial from "@/components/GameTutorial";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -43,7 +44,10 @@ function TopBar({
   return (
     <div className="flex items-center justify-between w-full px-4 py-3">
       <button
-        onClick={onBack}
+        onClick={() => {
+          onBack();
+          playPop();
+        }}
         className="flex items-center gap-1 text-lg font-heading text-gray-600 active:scale-95 transition-transform min-w-[64px] min-h-[48px]"
       >
         <span className="text-2xl">&#8592;</span> Kembali
@@ -572,7 +576,10 @@ function ModeFull({ onBack }: { onBack: () => void }) {
 export default function SukuKataPage() {
   const router = useRouter();
   const totalStars = useAppStore((s) => s.totalStars);
+  const recordGamePlay = useAppStore((s) => s.recordGamePlay);
   const [mode, setMode] = useState<Mode>(null);
+
+  useEffect(() => { recordGamePlay("suku-kata"); }, [recordGamePlay]);
 
   const handleBackFromMode = useCallback(() => {
     setMode(null);
@@ -584,6 +591,13 @@ export default function SukuKataPage() {
 
   return (
     <div className="min-h-screen bg-blue-50">
+      <GameTutorial
+        gameKey="suku-kata"
+        steps={[
+          { emoji: "\ud83d\udd24", text: "Pilih salah satu mode belajar: suku kata tunggal, gabung suku kata, atau kata utuh." },
+          { emoji: "\ud83e\udde0", text: "Di mode 'Gabung Suku Kata', gabungkan dua suku kata menjadi kata yang benar!" },
+        ]}
+      />
       <AnimatePresence mode="wait">
         {mode === null && (
           <motion.div

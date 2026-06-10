@@ -4,11 +4,12 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { speak, speakSyllable } from "@/lib/speech";
-import { playPop } from "@/lib/sounds";
 import { words, categories } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
 import StarCounter from "@/components/ui/StarCounter";
 import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameTutorial from "@/components/GameTutorial";
+import { playPop } from "@/lib/sounds";
 
 export default function KartuKataPage() {
   const {
@@ -16,7 +17,10 @@ export default function KartuKataPage() {
     addStar,
     customWords,
     wordsLearned,
+    recordGamePlay,
   } = useAppStore();
+
+  useEffect(() => { recordGamePlay("kartu-kata"); }, [recordGamePlay]);
 
   const [selectedCategory, setSelectedCategory] = useState("semua");
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -116,24 +120,32 @@ export default function KartuKataPage() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
+      <GameTutorial
+        gameKey="kartu-kata"
+        steps={[
+          { emoji: "\ud83d\udcda", text: "Geser atau tekan tombol panah untuk melihat kata berikutnya." },
+          { emoji: "\ud83d\udd0a", text: "Ketuk kartu untuk mendengar cara membaca kata yang benar." },
+        ]}
+      />
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-4">
-        <Link href="/">
+      <div className="relative flex items-center justify-between mb-4">
+        <Link href="/" className="z-10">
           <motion.button
             className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             aria-label="Kembali ke beranda"
-          >
+          
+            onClick={playPop}>
             {"\ud83c\udfe0"}
           </motion.button>
         </Link>
 
-        <h1 className="font-heading text-xl sm:text-2xl font-bold text-foreground">
+        <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-xl sm:text-2xl font-bold text-foreground whitespace-nowrap pointer-events-none">
           Kartu Kata
         </h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 z-10">
           <FocusModeButton />
           <StarCounter />
         </div>

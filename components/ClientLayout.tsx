@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import FocusModeWrapper from "@/components/focus/FocusModeWrapper";
+import OnboardingOverlay from "@/components/OnboardingOverlay";
+import { useAppStore } from "@/store/useAppStore";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -37,6 +39,28 @@ export default function ClientLayout({
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  // Unlock Audio and Speech APIs on first interaction
+  useEffect(() => {
+    const unlock = () => {
+      import("@/lib/sounds").then((m) => m.initAudio());
+      import("@/lib/speech").then((m) => m.initSpeech());
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("click", unlock);
+    };
+    window.addEventListener("touchstart", unlock, { once: true });
+    window.addEventListener("click", unlock, { once: true });
+    return () => {
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("click", unlock);
+    };
+  }, []);
+
+  // Sync calm mode to body class
+  const calmMode = useAppStore((s) => s.calmMode);
+  useEffect(() => {
+    document.body.classList.toggle("calm-mode-active", calmMode);
+  }, [calmMode]);
+
   const handleInstall = async () => {
     if (!installPrompt) return;
     await installPrompt.prompt();
@@ -55,6 +79,7 @@ export default function ClientLayout({
 
   return (
     <>
+      <OnboardingOverlay />
       {children}
       <FocusModeWrapper />
 

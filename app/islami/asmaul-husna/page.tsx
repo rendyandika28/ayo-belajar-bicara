@@ -98,23 +98,21 @@ export default function AsmaulHusnaPage() {
       <ConfettiEffect show={showConfetti} />
 
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <Link href="/islami">
-            <motion.button
-              className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              aria-label="Kembali ke halaman Islami"
-            >
-              {"◀️"}
-            </motion.button>
-          </Link>
-          <h1 className="font-heading text-2xl sm:text-3xl font-bold text-emerald-800">
-            Asmaul Husna {"✨"}
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="relative flex items-center justify-between mb-4">
+        <Link href="/islami" className="z-10">
+          <motion.button
+            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            aria-label="Kembali ke halaman Islami"
+          >
+            {"◀️"}
+          </motion.button>
+        </Link>
+        <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-2xl sm:text-3xl font-bold text-emerald-800 whitespace-nowrap pointer-events-none">
+          Asmaul Husna {"✨"}
+        </h1>
+        <div className="flex items-center gap-2 z-10">
           <FocusModeButton />
           <StarCounter />
         </div>

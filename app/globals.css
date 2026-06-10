@@ -120,3 +120,9 @@ body.focus-mode-active a[href="/islami"] {
   pointer-events: none !important;
   opacity: 0.3 !important;
 }
+
+/* Calm Mode — reduced motion */
+body.calm-mode-active * {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}

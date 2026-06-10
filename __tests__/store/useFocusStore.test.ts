@@ -5,7 +5,6 @@ const initialState = {
   focusDuration: 0,
   secondsRemaining: 0,
   isTabAway: false,
-  exitStep: 0 as const,
   showBreak: false,
 };
 
@@ -31,10 +30,9 @@ describe("useFocusStore", () => {
     });
 
     it("resets flags on start", () => {
-      useFocusStore.setState({ isTabAway: true, exitStep: 1, showBreak: true });
+      useFocusStore.setState({ isTabAway: true, showBreak: true });
       useFocusStore.getState().startFocusMode(10);
       expect(useFocusStore.getState().isTabAway).toBe(false);
-      expect(useFocusStore.getState().exitStep).toBe(0);
       expect(useFocusStore.getState().showBreak).toBe(false);
     });
   });
@@ -75,30 +73,6 @@ describe("useFocusStore", () => {
     });
   });
 
-  describe("tapExit", () => {
-    it("sets exitStep to 1 on first tap", () => {
-      useFocusStore.getState().startFocusMode(10);
-      useFocusStore.getState().tapExit();
-      expect(useFocusStore.getState().exitStep).toBe(1);
-    });
-
-    it("stops focus mode on second tap", () => {
-      useFocusStore.getState().startFocusMode(10);
-      useFocusStore.getState().tapExit();
-      useFocusStore.getState().tapExit();
-      expect(useFocusStore.getState().isFocusMode).toBe(false);
-      expect(useFocusStore.getState().secondsRemaining).toBe(0);
-    });
-  });
-
-  describe("resetExitStep", () => {
-    it("resets exitStep back to 0", () => {
-      useFocusStore.setState({ exitStep: 1 });
-      useFocusStore.getState().resetExitStep();
-      expect(useFocusStore.getState().exitStep).toBe(0);
-    });
-  });
-
   describe("stopFocusMode", () => {
     it("resets all fields", () => {
       useFocusStore.getState().startFocusMode(10);
@@ -108,7 +82,6 @@ describe("useFocusStore", () => {
       expect(state.focusDuration).toBe(0);
       expect(state.secondsRemaining).toBe(0);
       expect(state.isTabAway).toBe(false);
-      expect(state.exitStep).toBe(0);
       expect(state.showBreak).toBe(false);
     });
   });

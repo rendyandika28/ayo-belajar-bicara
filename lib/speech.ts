@@ -1,5 +1,7 @@
 "use client";
 
+import { useAppStore } from "@/store/useAppStore";
+
 let cachedVoice: SpeechSynthesisVoice | null = null;
 let voicesReady = false;
 
@@ -41,7 +43,9 @@ function doSpeak(
   text: string,
   options?: { rate?: number; pitch?: number; lang?: string; onEnd?: () => void }
 ) {
-  window.speechSynthesis.cancel();
+  if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+    window.speechSynthesis.cancel();
+  }
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = options?.lang || "id-ID";
@@ -60,11 +64,25 @@ function doSpeak(
   window.speechSynthesis.speak(utterance);
 }
 
+export function initSpeech() {
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  try {
+    const utterance = new SpeechSynthesisUtterance("");
+    utterance.volume = 0;
+    window.speechSynthesis.speak(utterance);
+  } catch {}
+}
+
 export function speak(
   text: string,
   options?: { rate?: number; pitch?: number; lang?: string; onEnd?: () => void }
 ) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
+  try {
+    if (useAppStore.getState().isMuted) return;
+  } catch {
+    return;
+  }
 
   if (voicesReady) {
     doSpeak(text, options);

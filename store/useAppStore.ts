@@ -2,10 +2,15 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { Word } from "@/data/words";
+import type { Word } from "@/data/words";
 
-interface AppState {
-  // Progress
+interface Profile {
+  id: string;
+  name: string;
+  emoji: string;
+}
+
+interface ProfileData {
   totalStars: number;
   currentLevel: number;
   wordsLearned: string[];
@@ -13,25 +18,76 @@ interface AppState {
   hijaiyahLearned: string[];
   doasAttempted: string[];
   asmaulHusnaLearned: string[];
-
-  // Daily
   dailyStreak: number;
   lastActiveDate: string;
   todayMinutes: number;
   todayStars: number;
-
-  // Settings
   sessionDuration: number;
   customWords: Word[];
-
-  // Session
   sessionStartTime: number | null;
   isBreakTime: boolean;
-
-  // Weekly stats
   weeklyMinutes: number[];
+  gameStats: Record<string, number>;
+}
 
-  // Actions
+function emptyProfileData(): ProfileData {
+  return {
+    totalStars: 0,
+    currentLevel: 1,
+    wordsLearned: [],
+    sessionsCompleted: 0,
+    hijaiyahLearned: [],
+    doasAttempted: [],
+    asmaulHusnaLearned: [],
+    dailyStreak: 0,
+    lastActiveDate: "",
+    todayMinutes: 0,
+    todayStars: 0,
+    sessionDuration: 5,
+    customWords: [],
+    sessionStartTime: null,
+    isBreakTime: false,
+    weeklyMinutes: [0, 0, 0, 0, 0, 0, 0],
+    gameStats: {},
+  };
+}
+
+function snapshot(state: AppState): ProfileData {
+  return {
+    totalStars: state.totalStars,
+    currentLevel: state.currentLevel,
+    wordsLearned: state.wordsLearned,
+    sessionsCompleted: state.sessionsCompleted,
+    hijaiyahLearned: state.hijaiyahLearned,
+    doasAttempted: state.doasAttempted,
+    asmaulHusnaLearned: state.asmaulHusnaLearned,
+    dailyStreak: state.dailyStreak,
+    lastActiveDate: state.lastActiveDate,
+    todayMinutes: state.todayMinutes,
+    todayStars: state.todayStars,
+    sessionDuration: state.sessionDuration,
+    customWords: state.customWords,
+    sessionStartTime: state.sessionStartTime,
+    isBreakTime: state.isBreakTime,
+    weeklyMinutes: state.weeklyMinutes,
+    gameStats: state.gameStats,
+  };
+}
+
+interface AppState extends ProfileData {
+  isMuted: boolean;
+  toggleMute: () => void;
+  calmMode: boolean;
+  toggleCalmMode: () => void;
+  profiles: Profile[];
+  activeProfileId: string;
+  profilesData: Record<string, ProfileData>;
+
+  addProfile: (name: string, emoji: string) => string;
+  removeProfile: (id: string) => void;
+  switchProfile: (id: string) => void;
+  renameProfile: (id: string, name: string) => void;
+
   addStar: (count?: number) => void;
   markWordLearned: (wordId: string) => void;
   markHijaiyahLearned: (id: string) => void;
@@ -47,6 +103,7 @@ interface AppState {
   setBreakTime: (val: boolean) => void;
   addMinutes: (min: number) => void;
   incrementSession: () => void;
+  recordGamePlay: (gameId: string) => void;
   resetProgress: () => void;
 }
 
@@ -57,29 +114,66 @@ function getToday(): string {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      // Initial state
-      totalStars: 0,
-      currentLevel: 1,
-      wordsLearned: [],
-      sessionsCompleted: 0,
-      hijaiyahLearned: [],
-      doasAttempted: [],
-      asmaulHusnaLearned: [],
+      isMuted: false,
+      toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
+      calmMode: false,
+      toggleCalmMode: () => set((state) => ({ calmMode: !state.calmMode })),
 
-      dailyStreak: 0,
-      lastActiveDate: "",
-      todayMinutes: 0,
-      todayStars: 0,
+      profiles: [{ id: "default", name: "Si Kecil", emoji: "\ud83d\udc76" }],
+      activeProfileId: "default",
+      profilesData: { default: emptyProfileData() },
 
-      sessionDuration: 5,
-      customWords: [],
+      ...emptyProfileData(),
 
-      sessionStartTime: null,
-      isBreakTime: false,
+      addProfile: (name: string, emoji: string) => {
+        const id = crypto.randomUUID();
+        set((state) => ({
+          profiles: [...state.profiles, { id, name, emoji }],
+          activeProfileId: id,
+          profilesData: { ...state.profilesData, [id]: emptyProfileData() },
+          ...emptyProfileData(),
+        }));
+        return id;
+      },
 
-      weeklyMinutes: [0, 0, 0, 0, 0, 0, 0],
+      removeProfile: (id: string) => {
+        set((state) => {
+          const remaining = state.profiles.filter((p) => p.id !== id);
+          if (remaining.length === 0) return state;
+          const newProfilesData = { ...state.profilesData };
+          delete newProfilesData[id];
+          const newActiveId =
+            state.activeProfileId === id ? remaining[0].id : state.activeProfileId;
+          const activeData = newProfilesData[newActiveId] || emptyProfileData();
+          return {
+            profiles: remaining,
+            activeProfileId: newActiveId,
+            profilesData: newProfilesData,
+            ...activeData,
+          };
+        });
+      },
 
-      // Actions
+      switchProfile: (id: string) => {
+        const state = get();
+        if (id === state.activeProfileId || !state.profilesData[id]) return;
+        const oldId = state.activeProfileId;
+        const oldData = snapshot(state);
+        set({
+          profilesData: { ...state.profilesData, [oldId]: oldData },
+          activeProfileId: id,
+          ...state.profilesData[id],
+        });
+      },
+
+      renameProfile: (id: string, name: string) => {
+        set((state) => ({
+          profiles: state.profiles.map((p) =>
+            p.id === id ? { ...p, name } : p
+          ),
+        }));
+      },
+
       addStar: (count = 1) => {
         set((state) => ({
           totalStars: state.totalStars + count,
@@ -134,7 +228,6 @@ export const useAppStore = create<AppState>()(
         const newStreak =
           state.lastActiveDate === yesterdayStr ? state.dailyStreak + 1 : 1;
 
-        // Shift weekly minutes
         const daysDiff = state.lastActiveDate
           ? Math.floor(
               (new Date(today).getTime() -
@@ -205,28 +298,79 @@ export const useAppStore = create<AppState>()(
         }));
       },
 
-      resetProgress: () => {
-        set({
-          totalStars: 0,
-          currentLevel: 1,
-          wordsLearned: [],
-          sessionsCompleted: 0,
-          hijaiyahLearned: [],
-          doasAttempted: [],
-          asmaulHusnaLearned: [],
-          dailyStreak: 0,
-          lastActiveDate: "",
-          todayMinutes: 0,
-          todayStars: 0,
-          customWords: [],
-          sessionStartTime: null,
-          isBreakTime: false,
-          weeklyMinutes: [0, 0, 0, 0, 0, 0, 0],
+      recordGamePlay: (gameId: string) => {
+        set((state) => {
+          const pid = state.activeProfileId;
+          const data = state.profilesData[pid];
+          if (!data) return state;
+          const current = data.gameStats[gameId] || 0;
+          const newGameStats = { ...data.gameStats, [gameId]: current + 1 };
+          const updated = { ...data, gameStats: newGameStats };
+          return {
+            profilesData: { ...state.profilesData, [pid]: updated },
+            gameStats: newGameStats,
+          };
         });
+      },
+
+      resetProgress: () => {
+        set(emptyProfileData());
       },
     }),
     {
       name: "speechTherapyData",
+      partialize: (state) => ({
+        isMuted: state.isMuted,
+        calmMode: state.calmMode,
+        profiles: state.profiles,
+      activeProfileId: state.activeProfileId,
+      profilesData: {
+          ...state.profilesData,
+          [state.activeProfileId]: snapshot(state),
+        },
+      }),
+      merge: (persisted, current) => {
+        const p = persisted as Record<string, unknown>;
+        if (!p || !p.profiles || !Array.isArray(p.profiles) || p.profiles.length === 0) {
+          const data: ProfileData = {
+            totalStars: (p?.totalStars as number) ?? 0,
+            currentLevel: (p?.currentLevel as number) ?? 1,
+            wordsLearned: (p?.wordsLearned as string[]) ?? [],
+            sessionsCompleted: (p?.sessionsCompleted as number) ?? 0,
+            hijaiyahLearned: (p?.hijaiyahLearned as string[]) ?? [],
+            doasAttempted: (p?.doasAttempted as string[]) ?? [],
+            asmaulHusnaLearned: (p?.asmaulHusnaLearned as string[]) ?? [],
+            dailyStreak: (p?.dailyStreak as number) ?? 0,
+            lastActiveDate: (p?.lastActiveDate as string) ?? "",
+            todayMinutes: (p?.todayMinutes as number) ?? 0,
+            todayStars: (p?.todayStars as number) ?? 0,
+            sessionDuration: (p?.sessionDuration as number) ?? 5,
+            customWords: (p?.customWords as Word[]) ?? [],
+            sessionStartTime: (p?.sessionStartTime as number | null) ?? null,
+            isBreakTime: (p?.isBreakTime as boolean) ?? false,
+            weeklyMinutes: (p?.weeklyMinutes as number[]) ?? [0, 0, 0, 0, 0, 0, 0],
+            gameStats: (p?.gameStats as Record<string, number>) ?? {},
+          };
+          return {
+            ...current,
+            profiles: [{ id: "default", name: "Si Kecil", emoji: "\ud83d\udc76" }],
+            activeProfileId: "default",
+            profilesData: { default: data },
+            ...data,
+          };
+        }
+        const profiles = p.profiles as Profile[];
+        const profilesData = p.profilesData as Record<string, ProfileData>;
+        const activeProfileId = (p.activeProfileId as string) || profiles[0].id;
+        const activeData = profilesData[activeProfileId] || emptyProfileData();
+        return {
+          ...current,
+          profiles,
+          activeProfileId,
+          profilesData,
+          ...activeData,
+        };
+      },
     }
   )
 );

@@ -20,13 +20,13 @@ export default function FocusModeButton() {
   return (
     <motion.button
       onClick={handleClick}
-      className="flex items-center gap-1.5 bg-purple-500 text-white rounded-full px-3 py-1.5 font-heading text-sm shadow-md min-h-[36px]"
+      className="flex items-center gap-1.5 bg-purple-500 text-white rounded-full px-3 py-1.5 font-heading text-xs shadow-md min-h-[36px]"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
-      aria-label="Aktifkan focus mode"
+      aria-label="Aktifkan mode belajar"
     >
-      <span>{"🎯"}</span>
-      <span>Focus ({sessionDuration}m)</span>
+      <span>{"\ud83d\udd12"}</span>
+      <span>Mode Belajar {sessionDuration}m</span>
     </motion.button>
   );
 }

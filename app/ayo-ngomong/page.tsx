@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { words } from "@/data/words";
@@ -15,17 +15,20 @@ import { playCorrect, playPop, playApplause } from "@/lib/sounds";
 import { isMatch } from "@/lib/fuzzyMatch";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameTutorial from "@/components/GameTutorial";
 
 const WORDS_PER_SESSION = 8;
 
 export default function AyoNgomongPage() {
-  const { totalStars, addStar, markWordLearned, incrementSession } =
+  const { totalStars, addStar, markWordLearned, incrementSession, recordGamePlay } =
     useAppStore();
+
+  useEffect(() => { recordGamePlay("ayo-ngomong"); }, [recordGamePlay]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [feedback, setFeedback] = useState<"match" | "close" | "no" | null>(
+  const [feedback, setFeedback] = useState<"match" | "close" | "no" | "no_speech" | null>(
     null
   );
   const [showConfetti, setShowConfetti] = useState(false);
@@ -38,11 +41,14 @@ export default function AyoNgomongPage() {
     null
   );
 
-  // Select difficulty 1 words first, shuffle, pick WORDS_PER_SESSION
-  const sessionWords = useMemo(() => {
-    const diff1 = words.filter((w) => w.difficulty === 1);
-    const shuffled = [...diff1].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, WORDS_PER_SESSION);
+  const [sessionWords, setSessionWords] = useState<typeof words>([]);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    const pool = words.filter((w) => w.difficulty <= 2);
+    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+    setSessionWords(shuffled.slice(0, WORDS_PER_SESSION));
   }, []);
 
   const currentWord = sessionWords[currentIndex];
@@ -138,6 +144,8 @@ export default function AyoNgomongPage() {
 
     recognitionRef.current = recognition;
 
+    let hasResult = false;
+
     recognition.onresult = (event) => {
       let interimTranscript = "";
       let finalTranscript = "";
@@ -146,8 +154,10 @@ export default function AyoNgomongPage() {
         const result = event.results[i];
         if (result.isFinal) {
           finalTranscript += result[0].transcript;
+          hasResult = true;
         } else {
           interimTranscript += result[0].transcript;
+          hasResult = true;
         }
       }
 
@@ -178,6 +188,9 @@ export default function AyoNgomongPage() {
 
     recognition.onend = () => {
       setIsListening(false);
+      if (!hasResult) {
+        setFeedback("no_speech");
+      }
     };
 
     try {
@@ -267,10 +280,29 @@ export default function AyoNgomongPage() {
     );
   }
 
-  if (!currentWord) return null;
+  if (!isMounted || !currentWord) {
+    return (
+      <div className="min-h-screen bg-purple-50 flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+          className="text-5xl"
+        >
+          🌟
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-purple-50 px-4 py-6 pb-12">
+      <GameTutorial
+        gameKey="ayo-ngomong"
+        steps={[
+          { emoji: "\ud83c\udfa4", text: "Dengarkan kata yang muncul di layar, lalu tekan tombol mikrofon." },
+          { emoji: "\ud83d\udde3\ufe0f", text: "Ucapkan kata dengan jelas. Aplikasi akan menilai ucapanmu!" },
+        ]}
+      />
       {/* Top bar */}
       <div className="flex items-center justify-between mb-4">
         <Link href="/">
@@ -343,8 +375,8 @@ export default function AyoNgomongPage() {
           </motion.div>
         </AnimatePresence>
 
-        {/* Listen button */}
-        <div className="flex justify-center mb-6">
+        {/* Listen button & Skip button */}
+        <div className="flex justify-center gap-4 mb-6">
           <motion.button
             onClick={handleReplay}
             className="bg-blue-400 hover:bg-blue-500 text-white rounded-2xl px-6 py-3 font-heading text-lg shadow-md flex items-center gap-2 min-h-[48px]"
@@ -352,6 +384,15 @@ export default function AyoNgomongPage() {
             whileTap={{ scale: 0.95 }}
           >
             🔊 Dengar
+          </motion.button>
+          
+          <motion.button
+            onClick={advanceToNext}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-2xl px-6 py-3 font-heading text-lg shadow-md flex items-center gap-2 min-h-[48px]"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Lewati ⏭️
           </motion.button>
         </div>
 
@@ -475,10 +516,24 @@ export default function AyoNgomongPage() {
               </p>
             </motion.div>
           )}
+
+          {feedback === "no_speech" && (
+            <motion.div
+              className="mt-4 text-center"
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            >
+              <p className="font-heading text-xl font-bold text-gray-500">
+                Suara tidak terdengar, coba lagi! 🎤
+              </p>
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* Manual fallback button also shown when speech is supported but for parent assistance */}
-        {supported && (feedback === "close" || feedback === "no") && (
+        {supported && (feedback === "close" || feedback === "no" || feedback === "no_speech") && (
           <motion.div
             className="mt-4 flex justify-center"
             initial={{ opacity: 0, y: 10 }}

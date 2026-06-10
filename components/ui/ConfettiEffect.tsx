@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useAppStore } from "@/store/useAppStore";
 
 const COLORS = [
   "bg-pink-400",
@@ -15,34 +16,52 @@ interface ConfettiEffectProps {
 }
 
 export default function ConfettiEffect({ show }: ConfettiEffectProps) {
+  const calmMode = useAppStore((s) => s.calmMode);
   const [visible, setVisible] = useState(false);
-  const [key, setKey] = useState(0);
 
   useEffect(() => {
     if (show) {
-      setKey((k) => k + 1);
       setVisible(true);
-      const timer = setTimeout(() => setVisible(false), 3000);
+      const timer = setTimeout(() => setVisible(false), calmMode ? 1500 : 3000);
       return () => clearTimeout(timer);
     } else {
       setVisible(false);
     }
-  }, [show]);
+  }, [show, calmMode]);
 
   const pieces = useMemo(
     () =>
-      Array.from({ length: 15 }, (_, i) => ({
+      Array.from({ length: calmMode ? 6 : 15 }, (_, i) => ({
         id: i,
         color: COLORS[i % COLORS.length],
-        left: (i * 7.1 + 3) % 100,
-        delay: (i * 0.09).toFixed(2),
-        size: 6 + (i % 4) * 2,
+        left: (i * 12 + 5) % 100,
+        delay: (i * 0.12).toFixed(2),
+        size: calmMode ? 10 + (i % 3) * 4 : 6 + (i % 4) * 2,
       })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [key]
+    [calmMode]
   );
 
   if (!visible) return null;
+
+  if (calmMode) {
+    return (
+      <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
+        {pieces.map((piece) => (
+          <div
+            key={piece.id}
+            className={`absolute rounded-full ${piece.color} opacity-70`}
+            style={{
+              left: `${piece.left}%`,
+              top: `${20 + (piece.id * 8) % 60}%`,
+              width: `${piece.size}px`,
+              height: `${piece.size}px`,
+              animation: `star-bounce 1.5s ease-in-out ${piece.delay}s infinite`,
+            }}
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">

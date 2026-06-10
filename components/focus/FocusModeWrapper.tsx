@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFocusStore } from "@/store/useFocusStore";
 import { useFocusMode } from "@/hooks/useFocusMode";
@@ -13,37 +13,78 @@ function formatTime(secs: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+const LONG_PRESS_MS = 3000;
+
 export default function FocusModeWrapper() {
   useFocusMode();
 
   const isFocusMode = useFocusStore((s) => s.isFocusMode);
   const secondsRemaining = useFocusStore((s) => s.secondsRemaining);
   const isTabAway = useFocusStore((s) => s.isTabAway);
-  const exitStep = useFocusStore((s) => s.exitStep);
   const showBreak = useFocusStore((s) => s.showBreak);
   const focusDuration = useFocusStore((s) => s.focusDuration);
-  const tapExit = useFocusStore((s) => s.tapExit);
-  const resetExitStep = useFocusStore((s) => s.resetExitStep);
   const stopFocusMode = useFocusStore((s) => s.stopFocusMode);
 
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pressProgress, setPressProgress] = useState(0);
+  const [sessionSummary, setSessionSummary] = useState<{
+    starsEarned: number;
+    wordsLearned: number;
+    sessionsCompleted: number;
+  } | null>(null);
+
+  const pressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const breakHandledRef = useRef(false);
+  const sessionSnapshotRef = useRef<{
+    stars: number;
+    words: number;
+    sessions: number;
+  } | null>(null);
 
-  // Auto-reset exit step after 3 seconds
+  // Capture snapshot when focus mode starts
   useEffect(() => {
-    if (exitStep === 1) {
-      resetTimerRef.current = setTimeout(() => {
-        resetExitStep();
-      }, 3000);
+    if (isFocusMode && !sessionSnapshotRef.current) {
+      const state = useAppStore.getState();
+      sessionSnapshotRef.current = {
+        stars: state.todayStars,
+        words: state.wordsLearned.length,
+        sessions: state.sessionsCompleted,
+      };
     }
+    if (!isFocusMode) {
+      sessionSnapshotRef.current = null;
+      setSessionSummary(null);
+    }
+  }, [isFocusMode]);
 
-    return () => {
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-        resetTimerRef.current = null;
+  const clearPressTimer = useCallback(() => {
+    if (pressTimerRef.current) {
+      clearInterval(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+    setPressProgress(0);
+  }, []);
+
+  const handlePressStart = useCallback(() => {
+    if (pressTimerRef.current) return;
+    const start = Date.now();
+    pressTimerRef.current = setInterval(() => {
+      const elapsed = Date.now() - start;
+      const progress = Math.min(elapsed / LONG_PRESS_MS, 1);
+      setPressProgress(progress);
+      if (progress >= 1) {
+        clearPressTimer();
+        stopFocusMode();
       }
-    };
-  }, [exitStep, resetExitStep]);
+    }, 50);
+  }, [clearPressTimer, stopFocusMode]);
+
+  const handlePressEnd = useCallback(() => {
+    clearPressTimer();
+  }, [clearPressTimer]);
+
+  useEffect(() => {
+    return () => clearPressTimer();
+  }, [clearPressTimer]);
 
   // Track learning time once when break overlay appears
   useEffect(() => {
@@ -53,6 +94,17 @@ export default function FocusModeWrapper() {
       appStore.addMinutes(focusDuration);
       appStore.incrementSession();
       appStore.setBreakTime(true);
+
+      // Compute session summary
+      const snapshot = sessionSnapshotRef.current;
+      if (snapshot) {
+        const current = useAppStore.getState();
+        setSessionSummary({
+          starsEarned: current.todayStars - snapshot.stars,
+          wordsLearned: current.wordsLearned.length - snapshot.words,
+          sessionsCompleted: current.sessionsCompleted - snapshot.sessions,
+        });
+      }
     }
     if (!showBreak) {
       breakHandledRef.current = false;
@@ -63,15 +115,10 @@ export default function FocusModeWrapper() {
     stopFocusMode();
   }, [stopFocusMode]);
 
-  const handleBreakRest = useCallback(() => {
-    // Learning time already tracked via effect above
-  }, []);
-
   if (!isFocusMode) return null;
 
   return (
     <>
-      {/* Floating timer — bottom-right pill */}
       {!showBreak && (
         <motion.div
           className={`fixed bottom-6 right-4 z-[85] bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border-2 border-purple-300 font-heading text-lg select-none ${
@@ -87,45 +134,51 @@ export default function FocusModeWrapper() {
         </motion.div>
       )}
 
-      {/* Lock button — top-right corner */}
       {!showBreak && (
-        <div className="fixed top-4 right-4 z-[85]">
-          <AnimatePresence mode="wait">
-            {exitStep === 0 ? (
-              <motion.button
-                key="locked"
-                onClick={tapExit}
-                className="w-10 h-10 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full shadow-md border-2 border-gray-300 text-lg"
-                whileTap={{ scale: 0.9 }}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                aria-label="Keluar focus mode"
-              >
-                {"🔒"}
-              </motion.button>
-            ) : (
-              <motion.button
-                key="unlocking"
-                onClick={tapExit}
-                className="flex items-center gap-2 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border-2 border-red-300 px-4 py-2 min-h-[44px]"
-                whileTap={{ scale: 0.95 }}
-                initial={{ opacity: 0, scale: 0.8, width: 40 }}
-                animate={{ opacity: 1, scale: 1, width: "auto" }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <span className="text-lg">{"🔓"}</span>
-                <span className="font-body text-sm text-red-600 whitespace-nowrap">
-                  Ketuk lagi untuk keluar
-                </span>
-              </motion.button>
-            )}
-          </AnimatePresence>
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[85] flex flex-col items-center gap-3">
+          <motion.button
+            onMouseDown={handlePressStart}
+            onMouseUp={handlePressEnd}
+            onMouseLeave={handlePressEnd}
+            onTouchStart={handlePressStart}
+            onTouchEnd={handlePressEnd}
+            onTouchCancel={handlePressEnd}
+            className="w-16 h-16 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full shadow-lg border-2 border-gray-300 text-2xl cursor-pointer select-none"
+            whileTap={{ scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            aria-label="Tekan lama untuk keluar"
+          >
+            {pressProgress > 0 ? "\u23f3" : "\ud83d\udd12"}
+          </motion.button>
+
+          {pressProgress > 0 && (
+            <div className="w-20 h-1 bg-gray-200 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-purple-500 rounded-full"
+                style={{ width: `${pressProgress * 100}%` }}
+              />
+            </div>
+          )}
+
+          {pressProgress === 0 && (
+            <motion.p
+              className="font-body text-xs text-white/70 text-center max-w-[160px] leading-relaxed"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+            >
+              Tekan lama tombol kunci untuk keluar
+            </motion.p>
+          )}
+          {pressProgress > 0 && pressProgress < 1 && (
+            <p className="font-body text-xs text-white font-semibold">
+              Tahan {Math.ceil(LONG_PRESS_MS / 1000 - pressProgress * (LONG_PRESS_MS / 1000))} detik lagi...
+            </p>
+          )}
         </div>
       )}
 
-      {/* Tab-away overlay */}
       <AnimatePresence>
         {isTabAway && !showBreak && (
           <motion.div
@@ -141,26 +194,26 @@ export default function FocusModeWrapper() {
               exit={{ scale: 0.8, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
-              <span className="text-8xl">{"👋"}</span>
+              <span className="text-8xl">{"\ud83d\udc4b"}</span>
               <h2 className="font-heading text-3xl font-bold text-white">
                 Ayo kembali belajar!
               </h2>
               <p className="font-body text-lg text-white/80">
-                Kamu masih dalam Focus Mode
+                Si kecil masih dalam Mode Belajar
               </p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Break overlay */}
       <AnimatePresence>
         {showBreak && (
           <div className="z-[95] relative">
             <BreakTimeOverlay
               onContinue={handleBreakContinue}
-              onBreak={handleBreakRest}
+              onBreak={() => {}}
               minutes={focusDuration}
+              summary={sessionSummary}
             />
           </div>
         )}

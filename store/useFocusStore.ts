@@ -7,15 +7,12 @@ interface FocusState {
   focusDuration: number;
   secondsRemaining: number;
   isTabAway: boolean;
-  exitStep: 0 | 1;
   showBreak: boolean;
 
   startFocusMode: (minutes: number) => void;
   stopFocusMode: () => void;
   tick: () => void;
   setTabAway: (val: boolean) => void;
-  tapExit: () => void;
-  resetExitStep: () => void;
 }
 
 export const useFocusStore = create<FocusState>()((set, get) => ({
@@ -23,7 +20,6 @@ export const useFocusStore = create<FocusState>()((set, get) => ({
   focusDuration: 0,
   secondsRemaining: 0,
   isTabAway: false,
-  exitStep: 0,
   showBreak: false,
 
   startFocusMode: (minutes: number) => {
@@ -32,7 +28,6 @@ export const useFocusStore = create<FocusState>()((set, get) => ({
       focusDuration: minutes,
       secondsRemaining: minutes * 60,
       isTabAway: false,
-      exitStep: 0,
       showBreak: false,
     });
   },
@@ -43,7 +38,6 @@ export const useFocusStore = create<FocusState>()((set, get) => ({
       focusDuration: 0,
       secondsRemaining: 0,
       isTabAway: false,
-      exitStep: 0,
       showBreak: false,
     });
   },
@@ -62,18 +56,5 @@ export const useFocusStore = create<FocusState>()((set, get) => ({
 
   setTabAway: (val: boolean) => {
     set({ isTabAway: val });
-  },
-
-  tapExit: () => {
-    const state = get();
-    if (state.exitStep === 0) {
-      set({ exitStep: 1 });
-    } else {
-      state.stopFocusMode();
-    }
-  },
-
-  resetExitStep: () => {
-    set({ exitStep: 0 });
   },
 }));
