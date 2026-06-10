@@ -23,6 +23,7 @@ const amiri = Amiri({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ayo-belajar-bicara.foya.dev/"),
   title: "Ayo Belajar Bicara! 🌟",
   description:
     "Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!",
@@ -38,12 +39,22 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     siteName: "Ayo Belajar Bicara",
+    url: "https://ayo-belajar-bicara.foya.dev/",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1024,
+        height: 1024,
+        alt: "Ayo Belajar Bicara Poster",
+      },
+    ],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Ayo Belajar Bicara!",
     description:
       "Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!",
+    images: ["/og-image.png"],
   },
   category: "education",
   appleWebApp: {
