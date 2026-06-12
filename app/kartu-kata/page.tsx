@@ -208,14 +208,29 @@ export default function KartuKataPage() {
                     onClick={handleCardTap}
                     className="absolute inset-0 bg-white rounded-3xl shadow-xl border-2 border-gray-100 p-6 flex flex-col items-center justify-center cursor-pointer select-none"
                   >
-                    {/* Emoji */}
-                    <motion.span
-                      className="text-6xl sm:text-8xl leading-none mb-4"
-                      whileTap={{ scale: 1.2 }}
-                      transition={{ type: "spring", stiffness: 400 }}
-                    >
-                      {currentWord.emoji}
-                    </motion.span>
+                    {/* Icon */}
+                    {currentWord.image ? (
+                      <motion.div
+                        className="w-40 h-40 sm:w-56 sm:h-56 rounded-2xl overflow-hidden mb-4"
+                        whileTap={{ scale: 1.05 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={currentWord.image}
+                          alt={currentWord.word}
+                          className="w-full h-full object-cover"
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        className="text-6xl sm:text-8xl leading-none mb-4"
+                        whileTap={{ scale: 1.2 }}
+                        transition={{ type: "spring", stiffness: 400 }}
+                      >
+                        {currentWord.emoji}
+                      </motion.span>
+                    )}
 
                     {/* Word */}
                     <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground mb-3">

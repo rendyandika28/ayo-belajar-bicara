@@ -5,9 +5,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
 import { Word } from "@/data/words";
+import { SafeInput } from "@/components/ui/SafeInput";
 
 const categories = [
-  "hewan", "buah", "benda", "keluarga", "aktivitas", "makanan", "islami",
+  "hewan", "buah", "benda", "keluarga", "aktivitas", "makanan",
   "warna", "angka", "tubuh", "alam", "peralatan",
 ] as const;
 
@@ -437,15 +438,15 @@ export default function PendampingPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="font-body text-sm text-gray-600 block mb-1">Emoji</label>
-                    <input type="text" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="contoh: \uD83C\uDF4E" className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
+                    <SafeInput type="text" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="contoh: \uD83C\uDF4E" className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
                   </div>
                   <div>
                     <label className="font-body text-sm text-gray-600 block mb-1">Kata</label>
-                    <input type="text" value={kata} onChange={(e) => setKata(e.target.value)} placeholder="contoh: apel" className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
+                    <SafeInput type="text" value={kata} onChange={(e) => setKata(e.target.value)} placeholder="contoh: apel" className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
                   </div>
                   <div>
                     <label className="font-body text-sm text-gray-600 block mb-1">Suku Kata</label>
-                    <input type="text" value={sukuKata} onChange={(e) => setSukuKata(e.target.value)} placeholder="pisahkan dengan koma, contoh: a, pel" className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
+                    <SafeInput type="text" value={sukuKata} onChange={(e) => setSukuKata(e.target.value)} placeholder="pisahkan dengan koma, contoh: a, pel" className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -472,7 +473,7 @@ export default function PendampingPage() {
                     {customWords.map((word) => (
                       <div key={word.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-100">
                         <div className="flex items-center gap-3">
-                          <span className="text-xl">{word.emoji}</span>
+                          <span className="text-xl flex-shrink-0" aria-hidden="true">{word.emoji}</span>
                           <div><span className="font-heading text-sm font-semibold text-gray-700">{word.word}</span><span className="font-body text-xs text-gray-400 ml-2">[{word.syllables.join(" - ")}]</span></div>
                           <span className="font-body text-xs text-gray-400 bg-gray-200 rounded-full px-2 py-0.5">{word.category}</span>
                         </div>

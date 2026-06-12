@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
+import { SafeInput } from "@/components/ui/SafeInput";
+import { ResponsivePanel } from "@/components/ui/ResponsivePanel";
 
 const emojiOptions = ["\ud83d\udc76", "\ud83d\udc67", "\ud83d\udc66", "\ud83d\udc69", "\ud83e\uddd2", "\ud83d\udc68", "\ud83d\udc70", "\ud83e\uddd1"];
 
@@ -73,12 +75,12 @@ export default function ProfileSwitcher() {
       <AnimatePresence>
         {open && (
           <motion.div
-            className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-3 z-50"
             initial={{ opacity: 0, y: -8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -8, scale: 0.95 }}
             transition={{ duration: 0.15 }}
           >
+            <ResponsivePanel className="w-64 bg-white rounded-2xl shadow-xl border-2 border-gray-100 p-3">
             {showAdd ? (
               <div className="flex flex-col gap-3">
                 <div className="flex gap-2 flex-wrap justify-center">
@@ -94,7 +96,7 @@ export default function ProfileSwitcher() {
                     </button>
                   ))}
                 </div>
-                <input
+                <SafeInput
                   className="font-body text-sm border-2 border-gray-200 rounded-xl px-3 py-2 w-full outline-none focus:border-purple-400"
                   placeholder="Nama anak..."
                   value={newName}
@@ -122,17 +124,17 @@ export default function ProfileSwitcher() {
                 {profiles.map((profile) => (
                   <div key={profile.id} className="flex items-center gap-2 min-h-[44px]">
                     <button
-                      className={`flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-left font-body text-sm ${
+                      className={`min-w-0 flex-1 flex items-center gap-3 px-3 py-2 rounded-xl text-left font-body text-sm ${
                         profile.id === activeProfileId
                           ? "bg-purple-50 text-purple-700 font-semibold"
                           : "hover:bg-gray-50 text-foreground/80"
                       }`}
                       onClick={() => handleSwitch(profile.id)}
                     >
-                      <span className="text-xl">{profile.emoji}</span>
+                      <span className="text-xl flex-shrink-0">{profile.emoji}</span>
                       {renameId === profile.id ? (
-                        <input
-                          className="flex-1 border-b-2 border-purple-400 outline-none bg-transparent font-body text-sm"
+                        <SafeInput
+                          className="min-w-0 flex-1 border-b-2 border-purple-400 outline-none bg-transparent font-body text-sm"
                           value={renameName}
                           onChange={(e) => setRenameName(e.target.value)}
                           onKeyDown={(e) => {
@@ -144,14 +146,14 @@ export default function ProfileSwitcher() {
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <span className="flex-1">{profile.name}</span>
+                        <span className="min-w-0 flex-1 truncate">{profile.name}</span>
                       )}
                       {profile.id === activeProfileId && (
-                        <span className="text-purple-400 text-xs">Aktif</span>
+                        <span className="text-purple-400 text-xs flex-shrink-0">Aktif</span>
                       )}
                     </button>
                     <button
-                      className="text-gray-300 hover:text-gray-500 text-sm px-1"
+                      className="text-gray-300 hover:text-gray-500 text-sm px-1 flex-shrink-0"
                       onClick={(e) => {
                         e.stopPropagation();
                         setRenameId(profile.id);
@@ -163,7 +165,7 @@ export default function ProfileSwitcher() {
                     </button>
                     {profiles.length > 1 && (
                       <button
-                        className="text-gray-300 hover:text-red-400 text-sm px-1"
+                        className="text-gray-300 hover:text-red-400 text-sm px-1 flex-shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           removeProfile(profile.id);
@@ -185,6 +187,7 @@ export default function ProfileSwitcher() {
                 </button>
               </div>
             )}
+            </ResponsivePanel>
           </motion.div>
         )}
       </AnimatePresence>

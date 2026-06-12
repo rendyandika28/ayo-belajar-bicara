@@ -524,7 +524,7 @@ function ModeFull({ onBack }: { onBack: () => void }) {
             transition={{ duration: 0.35, ease: "easeInOut" }}
             className="flex flex-col items-center gap-4"
           >
-            {/* Emoji */}
+            {/* Icon */}
             <span className="text-6xl sm:text-8xl select-none">{currentWord.emoji}</span>
 
             {/* Full word */}
