@@ -22,7 +22,7 @@ describe("words data", () => {
   });
 
   it("has valid categories", () => {
-    const validCategories = ["hewan", "buah", "benda", "keluarga", "aktivitas", "makanan", "islami", "warna", "angka", "tubuh", "alam", "peralatan"];
+    const validCategories = ["hewan", "buah", "benda", "keluarga", "aktivitas", "makanan", "warna", "angka", "tubuh", "alam", "peralatan"];
     for (const word of words) {
       expect(validCategories).toContain(word.category);
     }
@@ -58,5 +58,21 @@ describe("words data", () => {
     for (const word of words) {
       expect(word.syllables.length).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  describe("emoji mismatches (regression)", () => {
+    function findWord(id: string) {
+      const w = words.find((x) => x.id === id);
+      if (!w) throw new Error(`Word id not found: ${id}`);
+      return w;
+    }
+
+    it("bayi uses baby emoji (not baby angel)", () => {
+      expect(findWord("kel-8").emoji).toBe("\ud83d\udc76");
+    });
+
+    it("kue uses cake emoji (not cupcake)", () => {
+      expect(findWord("mkn-7").emoji).toBe("\ud83c\udf70");
+    });
   });
 });

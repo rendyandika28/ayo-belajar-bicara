@@ -3,7 +3,7 @@ export type Word = {
   emoji: string;
   word: string;
   syllables: string[];
-  category: "hewan" | "buah" | "benda" | "keluarga" | "aktivitas" | "makanan" | "islami" | "warna" | "angka" | "tubuh" | "alam" | "peralatan";
+  category: "hewan" | "buah" | "benda" | "keluarga" | "aktivitas" | "makanan" | "warna" | "angka" | "tubuh" | "alam" | "peralatan" | "foto";
   difficulty: 1 | 2 | 3;
 };
 
@@ -16,7 +16,7 @@ export const words: Word[] = [
   { id: "kel-5", emoji: "👵", word: "nenek", syllables: ["ne", "nek"], category: "keluarga", difficulty: 1 },
   { id: "kel-6", emoji: "👴", word: "kakek", syllables: ["ka", "kek"], category: "keluarga", difficulty: 1 },
   { id: "kel-7", emoji: "👦", word: "abang", syllables: ["a", "bang"], category: "keluarga", difficulty: 1 },
-  { id: "kel-8", emoji: "👼", word: "bayi", syllables: ["ba", "yi"], category: "keluarga", difficulty: 1 },
+  { id: "kel-8", emoji: "👶", word: "bayi", syllables: ["ba", "yi"], category: "keluarga", difficulty: 1 },
   { id: "kel-9", emoji: "👨‍👩‍👧‍👦", word: "keluarga", syllables: ["ke", "lu", "ar", "ga"], category: "keluarga", difficulty: 2 },
 
   // === HEWAN (15 kata) ===
@@ -36,17 +36,15 @@ export const words: Word[] = [
   { id: "hew-14", emoji: "🐊", word: "buaya", syllables: ["bu", "a", "ya"], category: "hewan", difficulty: 2 },
   { id: "hew-15", emoji: "🦋", word: "kupu", syllables: ["ku", "pu"], category: "hewan", difficulty: 1 },
 
-  // === BUAH (13 kata) ===
+  // === BUAH (11 kata) ===
   { id: "bua-1", emoji: "🍎", word: "apel", syllables: ["a", "pel"], category: "buah", difficulty: 1 },
   { id: "bua-2", emoji: "🍊", word: "jeruk", syllables: ["je", "ruk"], category: "buah", difficulty: 1 },
   { id: "bua-3", emoji: "🍌", word: "pisang", syllables: ["pi", "sang"], category: "buah", difficulty: 1 },
   { id: "bua-4", emoji: "🥭", word: "mangga", syllables: ["mang", "ga"], category: "buah", difficulty: 1 },
   { id: "bua-5", emoji: "🍉", word: "semangka", syllables: ["se", "mang", "ka"], category: "buah", difficulty: 2 },
   { id: "bua-6", emoji: "🍇", word: "anggur", syllables: ["ang", "gur"], category: "buah", difficulty: 1 },
-  { id: "bua-7", emoji: "🍈", word: "pepaya", syllables: ["pe", "pa", "ya"], category: "buah", difficulty: 2 },
   { id: "bua-8", emoji: "🍈", word: "melon", syllables: ["me", "lon"], category: "buah", difficulty: 1 },
   { id: "bua-9", emoji: "🍓", word: "stroberi", syllables: ["stro", "be", "ri"], category: "buah", difficulty: 3 },
-  { id: "bua-10", emoji: "🫐", word: "jambu", syllables: ["jam", "bu"], category: "buah", difficulty: 1 },
   { id: "bua-11", emoji: "🍍", word: "nanas", syllables: ["na", "nas"], category: "buah", difficulty: 1 },
   { id: "bua-12", emoji: "🥝", word: "kiwi", syllables: ["ki", "wi"], category: "buah", difficulty: 1 },
   { id: "bua-13", emoji: "🍑", word: "persik", syllables: ["per", "sik"], category: "buah", difficulty: 2 },
@@ -58,7 +56,7 @@ export const words: Word[] = [
   { id: "mkn-4", emoji: "🥚", word: "telur", syllables: ["te", "lur"], category: "makanan", difficulty: 1 },
   { id: "mkn-5", emoji: "🍜", word: "mie", syllables: ["mi", "e"], category: "makanan", difficulty: 1 },
   { id: "mkn-6", emoji: "🍲", word: "bubur", syllables: ["bu", "bur"], category: "makanan", difficulty: 1 },
-  { id: "mkn-7", emoji: "🧁", word: "kue", syllables: ["ku", "e"], category: "makanan", difficulty: 1 },
+  { id: "mkn-7", emoji: "🍰", word: "kue", syllables: ["ku", "e"], category: "makanan", difficulty: 1 },
   { id: "mkn-8", emoji: "🍬", word: "permen", syllables: ["per", "men"], category: "makanan", difficulty: 1 },
   { id: "mkn-9", emoji: "🍦", word: "es krim", syllables: ["es", "krim"], category: "makanan", difficulty: 2 },
   { id: "mkn-10", emoji: "🍪", word: "biskuit", syllables: ["bis", "ku", "it"], category: "makanan", difficulty: 2 },
@@ -74,12 +72,11 @@ export const words: Word[] = [
   { id: "bnd-5", emoji: "👕", word: "baju", syllables: ["ba", "ju"], category: "benda", difficulty: 1 },
   { id: "bnd-6", emoji: "🧢", word: "topi", syllables: ["to", "pi"], category: "benda", difficulty: 1 },
   { id: "bnd-7", emoji: "🪑", word: "kursi", syllables: ["kur", "si"], category: "benda", difficulty: 1 },
-  { id: "bnd-8", emoji: "🖍️", word: "pensil", syllables: ["pen", "sil"], category: "benda", difficulty: 1 },
+  { id: "bnd-8", emoji: "✏️", word: "pensil", syllables: ["pen", "sil"], category: "benda", difficulty: 1 },
   { id: "bnd-9", emoji: "📱", word: "handphone", syllables: ["hand", "pho", "ne"], category: "benda", difficulty: 3 },
   { id: "bnd-10", emoji: "🚲", word: "sepeda", syllables: ["se", "pe", "da"], category: "benda", difficulty: 2 },
   { id: "bnd-11", emoji: "🧸", word: "boneka", syllables: ["bo", "ne", "ka"], category: "benda", difficulty: 2 },
   { id: "bnd-12", emoji: "🧴", word: "sabun", syllables: ["sa", "bun"], category: "benda", difficulty: 1 },
-  { id: "bnd-13", emoji: "🧻", word: "tisu", syllables: ["ti", "su"], category: "benda", difficulty: 1 },
 
   // === AKTIVITAS (13 kata) ===
   { id: "akt-1", emoji: "🍽️", word: "makan", syllables: ["ma", "kan"], category: "aktivitas", difficulty: 1 },
@@ -88,25 +85,12 @@ export const words: Word[] = [
   { id: "akt-4", emoji: "🛁", word: "mandi", syllables: ["man", "di"], category: "aktivitas", difficulty: 1 },
   { id: "akt-5", emoji: "🎮", word: "main", syllables: ["ma", "in"], category: "aktivitas", difficulty: 1 },
   { id: "akt-6", emoji: "🏃", word: "lari", syllables: ["la", "ri"], category: "aktivitas", difficulty: 1 },
-  { id: "akt-7", emoji: "🪑", word: "duduk", syllables: ["du", "duk"], category: "aktivitas", difficulty: 1 },
   { id: "akt-8", emoji: "🧍", word: "berdiri", syllables: ["ber", "di", "ri"], category: "aktivitas", difficulty: 2 },
   { id: "akt-9", emoji: "✍️", word: "menulis", syllables: ["me", "nu", "lis"], category: "aktivitas", difficulty: 2 },
   { id: "akt-10", emoji: "📚", word: "belajar", syllables: ["be", "la", "jar"], category: "aktivitas", difficulty: 2 },
   { id: "akt-11", emoji: "🚶", word: "jalan", syllables: ["ja", "lan"], category: "aktivitas", difficulty: 1 },
   { id: "akt-12", emoji: "🗣️", word: "bicara", syllables: ["bi", "ca", "ra"], category: "aktivitas", difficulty: 2 },
   { id: "akt-13", emoji: "🎤", word: "nyanyi", syllables: ["nyan", "yi"], category: "aktivitas", difficulty: 2 },
-
-  // === ISLAMI (10 kata) ===
-  { id: "isl-1", emoji: "☪️", word: "allah", syllables: ["al", "lah"], category: "islami", difficulty: 1 },
-  { id: "isl-2", emoji: "🕌", word: "masjid", syllables: ["mas", "jid"], category: "islami", difficulty: 1 },
-  { id: "isl-3", emoji: "🤲", word: "sholat", syllables: ["sho", "lat"], category: "islami", difficulty: 1 },
-  { id: "isl-4", emoji: "📖", word: "quran", syllables: ["qur", "an"], category: "islami", difficulty: 1 },
-  { id: "isl-5", emoji: "🙏", word: "doa", syllables: ["do", "a"], category: "islami", difficulty: 1 },
-  { id: "isl-6", emoji: "💧", word: "wudhu", syllables: ["wu", "dhu"], category: "islami", difficulty: 1 },
-  { id: "isl-7", emoji: "🌙", word: "puasa", syllables: ["pu", "a", "sa"], category: "islami", difficulty: 2 },
-  { id: "isl-8", emoji: "🌈", word: "surga", syllables: ["sur", "ga"], category: "islami", difficulty: 1 },
-  { id: "isl-9", emoji: "✨", word: "amin", syllables: ["a", "min"], category: "islami", difficulty: 1 },
-  { id: "isl-10", emoji: "🌟", word: "bismillah", syllables: ["bis", "mil", "lah"], category: "islami", difficulty: 2 },
 
   // === WARNA (12 kata) ===
   { id: "war-1", emoji: "🔴", word: "merah", syllables: ["me", "rah"], category: "warna", difficulty: 1 },
@@ -120,7 +104,6 @@ export const words: Word[] = [
   { id: "war-9", emoji: "🟣", word: "ungu", syllables: ["u", "ngu"], category: "warna", difficulty: 1 },
   { id: "war-10", emoji: "🟠", word: "oranye", syllables: ["o", "ra", "nye"], category: "warna", difficulty: 2 },
   { id: "war-11", emoji: "🩷", word: "pink", syllables: ["pink"], category: "warna", difficulty: 1 },
-  { id: "war-12", emoji: "🟨", word: "emas", syllables: ["e", "mas"], category: "warna", difficulty: 1 },
 
   // === ANGKA (10 kata) ===
   { id: "ang-1", emoji: "1️⃣", word: "satu", syllables: ["sa", "tu"], category: "angka", difficulty: 1 },
@@ -141,14 +124,9 @@ export const words: Word[] = [
   { id: "tub-4", emoji: "👂", word: "telinga", syllables: ["te", "li", "nga"], category: "tubuh", difficulty: 2 },
   { id: "tub-5", emoji: "✋", word: "tangan", syllables: ["ta", "ngan"], category: "tubuh", difficulty: 1 },
   { id: "tub-6", emoji: "🦶", word: "kaki", syllables: ["ka", "ki"], category: "tubuh", difficulty: 1 },
-  { id: "tub-7", emoji: "💇", word: "rambut", syllables: ["ram", "but"], category: "tubuh", difficulty: 1 },
   { id: "tub-8", emoji: "🦷", word: "gigi", syllables: ["gi", "gi"], category: "tubuh", difficulty: 1 },
   { id: "tub-9", emoji: "👅", word: "lidah", syllables: ["li", "dah"], category: "tubuh", difficulty: 1 },
-  { id: "tub-10", emoji: "🖐️", word: "jari", syllables: ["ja", "ri"], category: "tubuh", difficulty: 1 },
-  { id: "tub-11", emoji: "🫃", word: "perut", syllables: ["pe", "rut"], category: "tubuh", difficulty: 1 },
-  { id: "tub-12", emoji: "🫀", word: "dada", syllables: ["da", "da"], category: "tubuh", difficulty: 1 },
-  { id: "tub-13", emoji: "🫠", word: "pipi", syllables: ["pi", "pi"], category: "tubuh", difficulty: 1 },
-  { id: "tub-14", emoji: "🫦", word: "dagu", syllables: ["da", "gu"], category: "tubuh", difficulty: 1 },
+  { id: "tub-10", emoji: "👆", word: "jari", syllables: ["ja", "ri"], category: "tubuh", difficulty: 1 },
   { id: "tub-15", emoji: "🤨", word: "alis", syllables: ["a", "lis"], category: "tubuh", difficulty: 1 },
 
   // === ALAM (15 kata) ===
@@ -159,22 +137,15 @@ export const words: Word[] = [
   { id: "alm-5", emoji: "🌧️", word: "hujan", syllables: ["hu", "jan"], category: "alam", difficulty: 1 },
   { id: "alm-6", emoji: "🌬️", word: "angin", syllables: ["an", "gin"], category: "alam", difficulty: 1 },
   { id: "alm-7", emoji: "🌳", word: "pohon", syllables: ["po", "hon"], category: "alam", difficulty: 1 },
-  { id: "alm-8", emoji: "🌸", word: "bunga", syllables: ["bu", "nga"], category: "alam", difficulty: 1 },
   { id: "alm-9", emoji: "⛰️", word: "gunung", syllables: ["gu", "nung"], category: "alam", difficulty: 1 },
   { id: "alm-10", emoji: "🌊", word: "laut", syllables: ["la", "ut"], category: "alam", difficulty: 1 },
-  { id: "alm-11", emoji: "🏞️", word: "sungai", syllables: ["su", "ngai"], category: "alam", difficulty: 1 },
   { id: "alm-12", emoji: "🪨", word: "batu", syllables: ["ba", "tu"], category: "alam", difficulty: 1 },
-  { id: "alm-13", emoji: "🏖️", word: "pasir", syllables: ["pa", "sir"], category: "alam", difficulty: 1 },
-  { id: "alm-14", emoji: "🌍", word: "tanah", syllables: ["ta", "nah"], category: "alam", difficulty: 1 },
   { id: "alm-15", emoji: "🔥", word: "api", syllables: ["a", "pi"], category: "alam", difficulty: 1 },
 
-  // === PERALATAN RUMAH (10 kata) ===
-  { id: "prl-1", emoji: "🪑", word: "meja", syllables: ["me", "ja"], category: "peralatan", difficulty: 1 },
+  // === PERALATAN RUMAH (7 kata) ===
   { id: "prl-2", emoji: "🗄️", word: "lemari", syllables: ["le", "ma", "ri"], category: "peralatan", difficulty: 2 },
   { id: "prl-3", emoji: "🥄", word: "sendok", syllables: ["sen", "dok"], category: "peralatan", difficulty: 1 },
   { id: "prl-4", emoji: "🍽️", word: "piring", syllables: ["pi", "ring"], category: "peralatan", difficulty: 1 },
-  { id: "prl-5", emoji: "🥛", word: "gelas", syllables: ["ge", "las"], category: "peralatan", difficulty: 1 },
-  { id: "prl-6", emoji: "🧊", word: "kulkas", syllables: ["kul", "kas"], category: "peralatan", difficulty: 2 },
   { id: "prl-7", emoji: "📺", word: "tv", syllables: ["tv"], category: "peralatan", difficulty: 1 },
   { id: "prl-8", emoji: "💡", word: "lampu", syllables: ["lam", "pu"], category: "peralatan", difficulty: 1 },
   { id: "prl-9", emoji: "🛏️", word: "kasur", syllables: ["ka", "sur"], category: "peralatan", difficulty: 1 },
@@ -189,7 +160,6 @@ export const categories = [
   { id: "makanan", label: "Makanan", emoji: "🍚" },
   { id: "benda", label: "Benda", emoji: "🎒" },
   { id: "aktivitas", label: "Aktivitas", emoji: "🏃" },
-  { id: "islami", label: "Islami", emoji: "🕌" },
   { id: "warna", label: "Warna", emoji: "🎨" },
   { id: "angka", label: "Angka", emoji: "🔢" },
   { id: "tubuh", label: "Tubuh", emoji: "🦷" },
