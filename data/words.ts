@@ -1,6 +1,7 @@
 export type Word = {
   id: string;
   emoji: string;
+  image?: string;
   word: string;
   syllables: string[];
   category: "hewan" | "buah" | "benda" | "keluarga" | "aktivitas" | "makanan" | "warna" | "angka" | "tubuh" | "alam" | "peralatan" | "foto";
