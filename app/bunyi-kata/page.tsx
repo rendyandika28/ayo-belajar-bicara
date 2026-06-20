@@ -10,7 +10,6 @@ import { speak } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause, playPop } from "@/lib/sounds";
 import StarCounter from "@/components/ui/StarCounter";
 import GameTutorial from "@/components/GameTutorial";
-import { usePageTitle } from "@/hooks/usePageTitle";
 
 const ConfettiEffect = dynamic(() => import("@/components/ui/ConfettiEffect"), { ssr: false });
 const SESSION_SIZE = 6;
@@ -65,7 +64,9 @@ function generateQuestion(pool: Word[]): Question | null {
 }
 
 export default function BunyiKataPage() {
-  usePageTitle("Bunyi Kata");
+  useEffect(() => {
+    document.title = "Bunyi Kata - Ayo Belajar Bicara";
+  }, []);
   const addStar = useAppStore((s) => s.addStar);
   const incrementSession = useAppStore((s) => s.incrementSession);
   const recordGamePlay = useAppStore((s) => s.recordGamePlay);

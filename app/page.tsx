@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { motion, type Variants } from "framer-motion";
 import StarCounter from "@/components/ui/StarCounter";
-import ProfileSwitcher from "@/components/ProfileSwitcher";
 import MuteButton from "@/components/MuteButton";
 import CalmModeToggle from "@/components/CalmModeToggle";
 import { useAppStore } from "@/store/useAppStore";
@@ -62,7 +61,6 @@ export default function HomePage() {
       {/* Top bar */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <ProfileSwitcher />
           <Link href="/pendamping">
             <motion.button
               className="flex items-center gap-1.5 bg-white/80 rounded-full px-3 py-2 shadow-md border-2 border-gray-200 text-sm font-heading min-h-[44px]"

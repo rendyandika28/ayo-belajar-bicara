@@ -5,8 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
 import { speak } from "@/lib/speech";
 import { Word } from "@/data/words";
-import { SafeInput } from "@/components/ui/SafeInput";
-import { ScrollArea } from "@/components/ui/ScrollArea";
 
 interface PhotoWordCreatorProps {
   open: boolean;
@@ -103,7 +101,7 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
             aria-modal="true"
             aria-labelledby="photo-word-title"
           >
-            <ScrollArea className="max-h-[90vh] p-6">
+            <div className="max-h-[90vh] overflow-y-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain] p-6">
               <h2
                 id="photo-word-title"
                 className="font-heading text-xl font-bold text-foreground text-center mb-2"
@@ -165,12 +163,13 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
               <label className="font-heading text-sm font-semibold text-foreground/70 block mb-1">
                 2. Kata
               </label>
-              <SafeInput
+              <input
                 type="text"
+                size={1}
                 value={word}
                 onChange={(e) => setWord(e.target.value)}
                 placeholder="contoh: boneka"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                className="min-w-0 w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                 aria-label="Kata"
               />
             </div>
@@ -180,12 +179,13 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
               <label className="font-heading text-sm font-semibold text-foreground/70 block mb-1">
                 3. Suku Kata
               </label>
-              <SafeInput
+              <input
                 type="text"
+                size={1}
                 value={syllables}
                 onChange={(e) => setSyllables(e.target.value)}
                 placeholder="bo, ne, ka"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                className="min-w-0 w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                 aria-label="Suku kata, pisahkan dengan koma"
               />
               <p className="font-body text-[10px] text-foreground/40 mt-1">
@@ -240,7 +240,7 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
                 Simpan
               </button>
             </div>
-            </ScrollArea>
+            </div>
           </motion.div>
         </motion.div>
       )}

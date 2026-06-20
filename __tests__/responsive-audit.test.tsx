@@ -62,36 +62,3 @@ describe.each(VIEWPORTS)("responsive audit @ $name", ({ width, height }) => {
     expect(docWidth).toBeLessThanOrEqual(width + 1);
   });
 });
-
-describe("SafeInput primitive", () => {
-  beforeEach(() => {
-    Object.defineProperty(window, "innerWidth", { value: 320, configurable: true });
-  });
-
-  afterEach(() => {
-    cleanup();
-  });
-
-  test("has min-w-0 class to prevent flex overflow", async () => {
-    const { SafeInput } = await import("@/components/ui/SafeInput");
-    const { container } = render(<SafeInput aria-label="test" />);
-    const input = container.querySelector("input");
-    expect(input?.className).toContain("min-w-0");
-  });
-
-  test("defaults size attribute to 1 to prevent intrinsic min-width", async () => {
-    const { SafeInput } = await import("@/components/ui/SafeInput");
-    const { container } = render(<SafeInput aria-label="test" />);
-    const input = container.querySelector("input");
-    expect(input?.getAttribute("size")).toBe("1");
-  });
-});
-
-describe("ResponsivePanel primitive", () => {
-  test("constrains width to viewport minus gutter", async () => {
-    const { ResponsivePanel } = await import("@/components/ui/ResponsivePanel");
-    const { container } = render(<ResponsivePanel>x</ResponsivePanel>);
-    const div = container.querySelector("div");
-    expect(div?.className).toContain("max-w-[calc(100vw-1.5rem)]");
-  });
-});
