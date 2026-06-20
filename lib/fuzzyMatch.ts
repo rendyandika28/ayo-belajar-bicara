@@ -6,19 +6,10 @@ export function isMatch(spoken: string, target: string): MatchResult {
 
   if (!s) return "no";
 
-  // Exact match
   if (s === t) return "match";
 
-  // Contains check
   if (s.includes(t) || t.includes(s)) return "match";
 
-  // Check if words in spoken contain target
-  const spokenWords = s.split(/\s+/);
-  for (const word of spokenWords) {
-    if (word === t || word.includes(t) || t.includes(word)) return "match";
-  }
-
-  // Character overlap check
   const tChars = t.split("");
   let matchCount = 0;
   const sCopy = s.split("");
