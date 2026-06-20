@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.nixpacks
+docs
+*.md
+!README.md
+coverage
+.DS_Store
