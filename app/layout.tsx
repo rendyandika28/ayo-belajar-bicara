@@ -1,26 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Fredoka, Nunito, Amiri } from "next/font/google";
 import ClientLayout from "@/components/ClientLayout";
 import "./globals.css";
-
-const fredoka = Fredoka({
-  subsets: ["latin"],
-  variable: "--font-fredoka",
-  display: "swap",
-});
-
-const nunito = Nunito({
-  subsets: ["latin"],
-  variable: "--font-nunito",
-  display: "swap",
-});
-
-const amiri = Amiri({
-  subsets: ["arabic"],
-  weight: ["400", "700"],
-  variable: "--font-amiri",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://ayo-belajar-bicara.foya.dev/"),
@@ -80,9 +60,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body
-        className={`${fredoka.variable} ${nunito.variable} ${amiri.variable} font-body antialiased`}
-      >
+      <body className="font-body antialiased">
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
