@@ -1,22 +1,22 @@
 # Ayo Belajar Bicara!
 
-Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain.
+Interactive speech therapy app for kids — learn to speak through play.
 
-PWA client-side, zero backend, localStorage-backed.
+Client-side PWA, zero backend, localStorage-backed.
 
-## Fitur
+## Features
 
-- **Kartu Kata** — Flashcard kosakata dengan gambar dan suara
-- **Suku Kata** — Latihan membaca suku kata
-- **Bunyi Kata** — Latihan fonetik bunyi huruf
-- **Susun Kalimat** — Latihan menyusun kalimat
-- **Ayo Ngomong** — Latihan pengucapan dengan speech recognition
-- **Tebak Gambar** — Game menebak gambar
-- **Tebak Suara** — Game menebak suara
-- **Konten Islami** — Hijaiyah, Asmaul Husna, doa harian
-- **Panduan Pendamping** — Tips untuk orang tua/terapis
-- **Focus Mode** — Mode fokus ala Netflix kid lock + calm mode
-- **PWA & Offline** — Installable, work offline
+- **Kartu Kata** — Vocabulary flashcards with images and audio
+- **Suku Kata** — Syllable reading practice
+- **Bunyi Kata** — Phonetic letter-sound exercises
+- **Susun Kalimat** — Sentence construction practice
+- **Ayo Ngomong** — Pronunciation practice with speech recognition
+- **Tebak Gambar** — Picture guessing game
+- **Tebak Suara** — Sound guessing game
+- **Konten Islami** — Hijaiyah, Asmaul Husna, daily prayers
+- **Panduan Pendamping** — Tips for parents and therapists
+- **Focus Mode** — Netflix-style kid lock + calm mode
+- **PWA & Offline** — Installable on home screen, works offline
 
 ## Tech Stack
 
@@ -36,11 +36,11 @@ npm install
 npm run dev
 ```
 
-Buka [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Scripts
 
-| Command | Keterangan |
+| Command | Description |
 |---|---|
 | `npm run dev` | Development server |
 | `npm run build` | Production build |
@@ -54,16 +54,16 @@ Buka [http://localhost:3000](http://localhost:3000).
 
 ```
 app/
-  ayo-ngomong/     — Latihan pengucapan
-  bunyi-kata/      — Latihan fonetik
-  islami/          — Hijaiyah, Asmaul Husna, doa
-  kartu-kata/      — Flashcard kosakata
-  suku-kata/       — Latihan suku kata
-  susun-kalimat/   — Latihan menyusun kalimat
-  tebak-gambar/    — Game tebak gambar
-  tebak-suara/     — Game tebak suara
-  pendamping/      — Panduan orang tua
-  offline/         — Fallback offline
+  ayo-ngomong/     — Pronunciation practice
+  bunyi-kata/      — Phonetic exercises
+  islami/          — Hijaiyah, Asmaul Husna, prayers
+  kartu-kata/      — Vocabulary flashcards
+  suku-kata/       — Syllable reading
+  susun-kalimat/   — Sentence construction
+  tebak-gambar/    — Picture guessing game
+  tebak-suara/     — Sound guessing game
+  pendamping/      — Parent/therapist guide
+  offline/         — Offline fallback
 components/        — UI components (focus, ui, layout)
 data/              — Static word & islamic data
 hooks/             — Custom hooks (useFocusMode)
