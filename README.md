@@ -1,33 +1,37 @@
 # Ayo Belajar Bicara!
 
-Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!
+Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain.
 
-Built with Next.js, designed as a PWA for offline-ready mobile use.
+PWA client-side, zero backend, localStorage-backed.
 
 ## Fitur
 
 - **Kartu Kata** — Flashcard kosakata dengan gambar dan suara
 - **Suku Kata** — Latihan membaca suku kata
+- **Bunyi Kata** — Latihan fonetik bunyi huruf
+- **Susun Kalimat** — Latihan menyusun kalimat
 - **Ayo Ngomong** — Latihan pengucapan dengan speech recognition
-- **Tebak Gambar** — Game menebak gambar untuk melatih kosakata
-- **Tebak Suara** — Game menebak suara untuk melatih pendengaran
-- **Konten Islami** — Hijaiyah, Asmaul Husna, dan doa harian
+- **Tebak Gambar** — Game menebak gambar
+- **Tebak Suara** — Game menebak suara
+- **Konten Islami** — Hijaiyah, Asmaul Husna, doa harian
 - **Panduan Pendamping** — Tips untuk orang tua/terapis
-- **Focus Mode** — Mode fokus ala Netflix kid lock
-- **PWA & Offline** — Bisa dipasang di home screen, support offline
+- **Focus Mode** — Mode fokus ala Netflix kid lock + calm mode
+- **PWA & Offline** — Installable, work offline
 
 ## Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript (strict)
 - **Styling:** Tailwind CSS
 - **Animation:** Framer Motion
-- **State:** Zustand
-- **Testing:** Vitest
-- **PWA:** Custom service worker (cache-first static, network-first navigation)
+- **State:** Zustand 5
+- **Testing:** Vitest + Testing Library + jsdom
+- **PWA:** Custom service worker (precache shell, cache-first static, network-first navigation)
 
 ## Getting Started
 
 ```bash
+nvm use        # Node 22
 npm install
 npm run dev
 ```
@@ -51,18 +55,24 @@ Buka [http://localhost:3000](http://localhost:3000).
 ```
 app/
   ayo-ngomong/     — Latihan pengucapan
-  islami/          — Konten Islami (hijaiyah, doa, asmaul husna)
+  bunyi-kata/      — Latihan fonetik
+  islami/          — Hijaiyah, Asmaul Husna, doa
   kartu-kata/      — Flashcard kosakata
   suku-kata/       — Latihan suku kata
+  susun-kalimat/   — Latihan menyusun kalimat
   tebak-gambar/    — Game tebak gambar
   tebak-suara/     — Game tebak suara
   pendamping/      — Panduan orang tua
-  offline/         — Halaman offline fallback
-components/        — Reusable components
-lib/               — Utilities & data
+  offline/         — Fallback offline
+components/        — UI components (focus, ui, layout)
+data/              — Static word & islamic data
+hooks/             — Custom hooks (useFocusMode)
+lib/               — Utilities (speech, sounds, fuzzyMatch)
+store/             — Zustand stores (app, focus)
 public/
   sw.js            — Service worker
   manifest.json    — PWA manifest
+  icons/           — PWA icons (SVG)
 ```
 
 ## License
