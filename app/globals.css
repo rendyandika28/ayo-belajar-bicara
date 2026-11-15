@@ -99,6 +99,8 @@ body.calm-mode-active .home-card { transition: none !important; transform: none 
 html.focus-mode-active {
   overscroll-behavior: none;
 }
+/* Room so the corner timer pill never covers the last row of content */
+body.focus-mode-active { padding-bottom: 88px; }
 
 
 body.focus-mode-active a[href="/"],

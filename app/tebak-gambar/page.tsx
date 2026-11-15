@@ -188,9 +188,10 @@ export default function TebakGambarPage() {
       />
       <ConfettiEffect show={showConfetti} />
 
-      <div className="max-w-md mx-auto">
+      {/* Fits one screen (dvh minus GameShell header/padding): no scrolling while playing. */}
+      <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-13rem)] sm:h-[calc(100dvh-11rem)] min-h-[440px] max-h-[760px]">
         {/* Progress */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-3 mb-3 shrink-0">
           <div className="flex-1 h-2.5 bg-line rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-accent rounded-full origin-left"
@@ -211,18 +212,15 @@ export default function TebakGambarPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="bg-surface rounded-3xl border border-line p-5 sm:p-6 flex flex-col items-center gap-5"
+            className="flex-1 min-h-0 bg-surface rounded-3xl border border-line p-4 sm:p-5 flex flex-col items-center gap-3"
           >
             {/* Question prompt */}
-            <div className="text-center">
-              <h2 className="font-heading text-2xl sm:text-3xl font-bold text-ink">
-                Mana gambar yang benar?
-              </h2>
-              <p className="font-body text-xl text-ink-muted">Dengarkan dan pilih!</p>
-            </div>
+            <h2 className="shrink-0 font-heading text-xl sm:text-2xl font-bold text-ink text-center">
+              Mana gambar yang benar?
+            </h2>
 
             {/* Listen button */}
-            <BigButton onClick={speakTarget}>
+            <BigButton onClick={speakTarget} className="shrink-0">
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M11 5 6 9H3v6h3l5 4z" />
                 <path d="M15.5 8.5a5 5 0 0 1 0 7" />
@@ -232,12 +230,12 @@ export default function TebakGambarPage() {
             </BigButton>
 
             {/* Feedback text */}
-            <p className="min-h-[28px] font-heading text-xl text-ink" aria-live="polite">
+            <p className="shrink-0 min-h-[28px] font-heading text-lg sm:text-xl text-ink" aria-live="polite">
               {feedbackText}
             </p>
 
             {/* Options grid (2x2) */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full">
+            <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-2 gap-3 sm:gap-4 w-full">
               {currentQuestion.options.map((option) => {
                 const isSelected = selectedId === option.id;
                 const isTarget = option.id === currentQuestion.target.id;
@@ -263,12 +261,14 @@ export default function TebakGambarPage() {
                     key={option.id}
                     onClick={() => handleSelect(option)}
                     disabled={isLocked}
-                    className={`relative flex flex-col items-center justify-center gap-2 bg-paper rounded-3xl border-4 min-h-[120px] sm:min-h-[140px] p-3 transition-colors duration-200 ${borderClass} ${
+                    className={`relative min-h-0 flex flex-col items-center justify-center gap-1 bg-paper rounded-3xl border-4 p-2 sm:p-3 transition-colors duration-200 ${borderClass} ${
                       !isLocked ? "hover:bg-accent-soft active:bg-line" : ""
                     }`}
                   >
-                    <WordPicture word={option} className="w-20 h-20 sm:w-24 sm:h-24" emojiClassName="text-5xl sm:text-6xl" />
-                    <span className="font-heading text-xl font-bold text-ink">
+                    <span className="flex-1 min-h-0 w-full flex items-center justify-center">
+                      <WordPicture word={option} className="h-full max-h-36 aspect-square" emojiClassName="text-5xl sm:text-6xl" />
+                    </span>
+                    <span className="shrink-0 font-heading text-lg sm:text-xl font-bold text-ink">
                       {option.word}
                     </span>
 

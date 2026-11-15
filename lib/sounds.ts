@@ -44,6 +44,9 @@ function playTone(
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
+    // Calm mode: half volume for sound-sensitive kids.
+    if (useAppStore.getState().calmMode) volume /= 2;
+
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
 

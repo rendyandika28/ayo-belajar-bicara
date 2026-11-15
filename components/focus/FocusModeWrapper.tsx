@@ -26,6 +26,14 @@ export default function FocusModeWrapper() {
   const stopFocusMode = useFocusStore((s) => s.stopFocusMode);
 
   const [pressProgress, setPressProgress] = useState(0);
+  // Hint "tekan dan tahan gembok": shown when focus mode starts and after a too-short tap.
+  const [showHint, setShowHint] = useState(false);
+  const hintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashHint = useCallback(() => {
+    setShowHint(true);
+    if (hintTimerRef.current) clearTimeout(hintTimerRef.current);
+    hintTimerRef.current = setTimeout(() => setShowHint(false), 5000);
+  }, []);
   const [sessionSummary, setSessionSummary] = useState<{
     starsEarned: number;
     wordsLearned: number;
@@ -79,8 +87,14 @@ export default function FocusModeWrapper() {
   }, [clearPressTimer, stopFocusMode]);
 
   const handlePressEnd = useCallback(() => {
+    if (pressTimerRef.current) flashHint(); // released before the hold finished
     clearPressTimer();
-  }, [clearPressTimer]);
+  }, [clearPressTimer, flashHint]);
+
+  useEffect(() => {
+    if (isFocusMode) flashHint();
+    return () => { if (hintTimerRef.current) clearTimeout(hintTimerRef.current); };
+  }, [isFocusMode, flashHint]);
 
   useEffect(() => {
     return () => clearPressTimer();
@@ -119,65 +133,53 @@ export default function FocusModeWrapper() {
 
   return (
     <>
+      {/* One small pill in the corner: timer + long-press lock. Was a lock button fixed at
+          screen centre, which covered the game. */}
       {!showBreak && (
-        <motion.div
-          className={`fixed bottom-6 right-4 z-[85] bg-surface rounded-full px-4 min-h-[44px] flex items-center border-2 font-heading text-lg select-none tabular-nums ${
-            secondsRemaining < 60 ? "border-warn" : "border-line"
-          }`}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <span className="text-ink font-bold">
-            {formatTime(secondsRemaining)}
-          </span>
-        </motion.div>
-      )}
-
-      {!showBreak && (
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[85] flex flex-col items-center gap-3">
-          <motion.button
-            onMouseDown={handlePressStart}
-            onMouseUp={handlePressEnd}
-            onMouseLeave={handlePressEnd}
-            onTouchStart={handlePressStart}
-            onTouchEnd={handlePressEnd}
-            onTouchCancel={handlePressEnd}
-            className="w-16 h-16 flex items-center justify-center bg-surface text-ink rounded-full border-2 border-line cursor-pointer select-none"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            aria-label="Tekan lama untuk keluar"
-          >
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="5" y="11" width="14" height="10" rx="2" />
-              <path d={pressProgress > 0 ? "M8 11V7a4 4 0 0 1 7.5-2" : "M8 11V7a4 4 0 0 1 8 0v4"} />
-            </svg>
-          </motion.button>
-
-          {pressProgress > 0 && (
-            <div className="w-20 h-1.5 bg-line rounded-full overflow-hidden">
-              <div
-                className="h-full bg-accent-strong rounded-full"
-                style={{ width: `${pressProgress * 100}%` }}
-              />
-            </div>
-          )}
-
-          {pressProgress === 0 && (
-            <motion.p
-              className="font-body text-sm text-ink-muted bg-surface rounded-xl px-3 py-1 text-center max-w-[180px] leading-relaxed"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-            >
-              Tekan lama tombol kunci untuk keluar
-            </motion.p>
-          )}
+        <div className="fixed bottom-4 right-4 z-[85] flex flex-col items-end gap-2">
           {pressProgress > 0 && pressProgress < 1 && (
-            <p className="font-body text-sm text-ink bg-surface rounded-xl px-3 py-1 font-semibold">
+            <p className="font-body text-sm text-ink bg-surface border border-line rounded-xl px-3 py-1 font-semibold">
               Tahan {Math.ceil(LONG_PRESS_MS / 1000 - pressProgress * (LONG_PRESS_MS / 1000))} detik lagi…
             </p>
           )}
+          {showHint && pressProgress === 0 && (
+            <p role="status" className="font-body text-sm text-ink bg-surface border border-line rounded-xl px-3 py-2 max-w-[220px] text-right leading-snug">
+              Untuk keluar, <strong>tekan dan tahan</strong> ikon gembok 3 detik
+            </p>
+          )}
+          <div
+            className={`flex items-center gap-1 bg-surface rounded-full pl-4 pr-1 min-h-[52px] border-2 select-none ${
+              secondsRemaining < 60 ? "border-warn" : "border-line"
+            }`}
+          >
+            <span className="font-heading text-lg text-ink font-bold tabular-nums">
+              {formatTime(secondsRemaining)}
+            </span>
+            <button
+              type="button"
+              onMouseDown={handlePressStart}
+              onMouseUp={handlePressEnd}
+              onMouseLeave={handlePressEnd}
+              onTouchStart={handlePressStart}
+              onTouchEnd={handlePressEnd}
+              onTouchCancel={handlePressEnd}
+              onContextMenu={(e) => e.preventDefault()}
+              className="relative w-11 h-11 flex items-center justify-center text-ink rounded-full cursor-pointer select-none hover:bg-accent-soft"
+              aria-label="Tekan lama untuk keluar dari mode belajar"
+              title="Tekan lama untuk keluar"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="10" rx="2" />
+                <path d={pressProgress > 0 ? "M8 11V7a4 4 0 0 1 7.5-2" : "M8 11V7a4 4 0 0 1 8 0v4"} />
+              </svg>
+              {pressProgress > 0 && (
+                <svg className="absolute inset-0 -rotate-90" viewBox="0 0 44 44" aria-hidden="true">
+                  <circle cx="22" cy="22" r="20" fill="none" stroke="var(--accent-strong)" strokeWidth="3"
+                    strokeDasharray={125.7} strokeDashoffset={125.7 * (1 - pressProgress)} strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       )}
 

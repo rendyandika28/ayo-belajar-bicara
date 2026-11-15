@@ -1,5 +1,6 @@
 "use client";
 
+import CalmModeToggle from "@/components/CalmModeToggle";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
@@ -133,6 +134,7 @@ export default function PendampingPage() {
               Pendamping
             </h1>
           </div>
+          <CalmModeToggle />
         </header>
 
         {/* Ringkasan + pengaturan dalam satu halaman */}

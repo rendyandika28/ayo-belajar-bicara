@@ -5,7 +5,6 @@ import AssetImage from "@/components/ui/AssetImage";
 import Link from "next/link";
 import StarCounter from "@/components/ui/StarCounter";
 import MuteButton from "@/components/MuteButton";
-import CalmModeToggle from "@/components/CalmModeToggle";
 import { useAppStore } from "@/store/useAppStore";
 import { playPop } from "@/lib/sounds";
 
@@ -74,7 +73,6 @@ export default function HomePage() {
           </Link>
 
           <div className="flex flex-wrap justify-end items-center gap-1.5">
-            <CalmModeToggle />
             <MuteButton />
             {dailyStreak > 0 && (
               <div className="flex items-center gap-1 bg-surface rounded-full px-3 min-h-[44px] border border-line">
