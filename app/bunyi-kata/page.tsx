@@ -102,7 +102,6 @@ export default function BunyiKataPage() {
     setFinished(false);
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(startSession, []);
 
   const currentQuestion = questions[currentIdx];
