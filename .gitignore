@@ -41,4 +41,5 @@ next-env.d.ts
 /public/images/ui/
 /public/images/games/
 /public/images/doa/
+/public/images/sentences/
 .assets-uploaded.json

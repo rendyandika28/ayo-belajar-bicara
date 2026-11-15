@@ -5,7 +5,7 @@
  *   npm run upload:assets            # changed/new files only
  *   npm run upload:assets -- --all   # everything
  *
- * Uploads public/images/{words,ui,games,doa} and public/audio to the bucket in R2_BUCKET
+ * Uploads public/images/{words,ui,games,doa,sentences} and public/audio to the bucket in R2_BUCKET
  * (env or .env.local) with the same paths, e.g. audio/kucing.mp3. Uses wrangler
  * (run `npx wrangler login` once). Uploaded size+mtime are remembered in .assets-uploaded.json.
  * After `npm run gen:words` / `gen:ui` / `gen:audio`, run this.
@@ -18,7 +18,7 @@ import { fileURLToPath } from "node:url";
 
 const run = promisify(execFile);
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const DIRS = ["images/words", "images/ui", "images/games", "images/doa", "audio"];
+const DIRS = ["images/words", "images/ui", "images/games", "images/doa", "images/sentences", "audio"];
 const TYPES = { ".webp": "image/webp", ".png": "image/png", ".mp3": "audio/mpeg" };
 const STATE = join(root, ".assets-uploaded.json");
 

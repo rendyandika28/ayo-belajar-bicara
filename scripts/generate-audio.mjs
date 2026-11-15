@@ -18,7 +18,8 @@ import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { words, simpleSentences } from "../data/words.ts";
+import { words } from "../data/words.ts";
+import { sentences } from "../data/sentences.ts";
 import { hijaiyahLetters, dailyDoas, asmaulHusna } from "../data/islamic.ts";
 import { audioKey, syllableKey } from "../lib/audioKey.ts";
 
@@ -106,7 +107,7 @@ const KEY = apiKey();
 const texts = new Map();
 const add = (t, kind) => { const key = t && audioKey(t); if (t && !texts.has(key)) texts.set(key, { key, text: t, kind }); };
 words.forEach((w) => add(w.word, "word"));
-simpleSentences.forEach((s) => add(s, "sentence"));
+sentences.forEach((s) => add(s.text, "sentence"));
 words.forEach((w) => w.syllables.forEach((s) => add(s, "syllable")));
 // Each syllable again, as said inside its own word (used when the app knows the word).
 words.forEach((w) => w.syllables.forEach((s, idx) => {

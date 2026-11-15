@@ -14,7 +14,8 @@
     "gen:ui": "node scripts/generate-word-images.mjs --subjects scripts/ui-subjects.json --out public/images/ui",
     "gen:audio": "node scripts/generate-audio.mjs",
     "upload:assets": "node scripts/upload-assets.mjs",
-    "gen:doa": "node scripts/generate-word-images.mjs --subjects scripts/doa-subjects.json --out public/images/doa"
+    "gen:doa": "node scripts/generate-word-images.mjs --subjects scripts/doa-subjects.json --out public/images/doa",
+    "gen:sentences": "node scripts/generate-word-images.mjs --subjects scripts/sentence-subjects.json --out public/images/sentences"
   },
   "dependencies": {
     "framer-motion": "^12.34.1",

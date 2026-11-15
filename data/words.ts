@@ -169,20 +169,3 @@ export const categories = [
   { id: "peralatan", label: "Peralatan", emoji: "🏠", image: "/images/words/prl-8.webp" },
 ] as const;
 
-export const simpleSentences = [
-  "makan nasi",
-  "minum susu",
-  "kucing lucu",
-  "bola besar",
-  "baju baru",
-  "mama cantik",
-  "papa hebat",
-  "ikan renang",
-  "burung terbang",
-  "adik tidur",
-  "bunga merah",
-  "langit biru",
-  "matahari terang",
-  "adik mandi",
-  "kakak main bola",
-];
