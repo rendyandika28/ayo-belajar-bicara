@@ -1,4 +1,5 @@
-import { useAppStore } from "@/store/useAppStore";
+import { useAppStore, migrateAppState } from "@/store/useAppStore";
+import { localDateKey } from "@/lib/date";
 
 const initialState = {
   totalStars: 0,
@@ -284,5 +285,19 @@ describe("useAppStore", () => {
       useAppStore.getState().incrementSession();
       expect(useAppStore.getState().sessionsCompleted).toBe(2);
     });
+  });
+});
+
+describe("migrateAppState (v0 UTC keys -> v1 local keys)", () => {
+  it("maps UTC today/yesterday to local today/yesterday, leaves others", () => {
+    const now = new Date();
+    const y = new Date(now);
+    y.setDate(y.getDate() - 1);
+    const utcToday = now.toISOString().slice(0, 10);
+    const utcYesterday = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+    expect(migrateAppState({ lastActiveDate: utcToday, totalStars: 3 }, 0)).toEqual({ lastActiveDate: localDateKey(now), totalStars: 3 });
+    expect(migrateAppState({ lastActiveDate: utcYesterday }, 0).lastActiveDate).toBe(localDateKey(y));
+    expect(migrateAppState({ lastActiveDate: "2020-01-01" }, 0).lastActiveDate).toBe("2020-01-01");
+    expect(migrateAppState({ lastActiveDate: utcToday }, 1).lastActiveDate).toBe(utcToday);
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import BigButton from "@/components/ui/BigButton";
 
 export default function Error({
   error,
@@ -14,20 +15,17 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-      <span className="text-7xl mb-4">{"😢"}</span>
-      <h2 className="font-heading text-2xl font-bold text-foreground mb-2">
-        Oops, ada masalah!
-      </h2>
-      <p className="font-body text-foreground/60 mb-6">
-        Tenang, coba tekan tombol di bawah ya.
-      </p>
-      <button
-        onClick={reset}
-        className="bg-purple-500 text-white font-heading text-lg px-8 py-3 rounded-2xl shadow-lg active:scale-95 transition-transform min-h-[52px]"
-      >
-        Coba Lagi
-      </button>
+    <div className="min-h-screen bg-paper flex items-center justify-center px-4">
+      <div className="bg-surface rounded-3xl border border-line p-8 max-w-sm w-full flex flex-col items-center text-center gap-4">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-warn">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7.5v5.5" />
+          <path d="M12 16.5h.01" />
+        </svg>
+        <h2 className="font-heading text-2xl font-bold text-ink">Oops, ada masalah!</h2>
+        <p className="font-body text-base text-ink-muted">Tenang, coba tekan tombol di bawah ya.</p>
+        <BigButton onClick={reset} className="w-full">Coba Lagi</BigButton>
+      </div>
     </div>
   );
 }

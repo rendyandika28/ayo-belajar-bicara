@@ -84,18 +84,18 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 px-4"
+          className="fixed inset-0 z-[95] flex items-center justify-center bg-[var(--scrim)] px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
           <motion.div
-            className="bg-white rounded-3xl shadow-2xl max-w-md w-full"
-            initial={{ scale: 0.9, y: 20, opacity: 0 }}
-            animate={{ scale: 1, y: 0, opacity: 1 }}
-            exit={{ scale: 0.9, y: 20, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="bg-surface border border-line rounded-3xl max-w-md w-full"
+            initial={{ y: 16, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 16, opacity: 0 }}
+            transition={{ duration: 0.25 }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -104,17 +104,18 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
             <div className="max-h-[90vh] overflow-y-auto [-webkit-overflow-scrolling:touch] [overscroll-behavior:contain] p-6">
               <h2
                 id="photo-word-title"
-                className="font-heading text-xl font-bold text-foreground text-center mb-2"
+                className="flex items-center justify-center gap-2 font-heading text-xl font-bold text-ink text-center mb-2"
               >
-                {"\ud83d\udcf7"} Tambah Kata dari Foto
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+                Tambah Kata dari Foto
               </h2>
-              <p className="font-body text-xs text-foreground/60 text-center mb-4">
+              <p className="font-body text-sm text-ink-muted text-center mb-4">
                 Foto benda di rumah, jadi flashcard personal untuk si kecil
               </p>
 
             {/* Image upload */}
             <div className="mb-4">
-              <p className="font-heading text-sm font-semibold text-foreground/70 mb-2">
+              <p className="font-heading text-base font-semibold text-ink mb-2">
                 1. Pilih Foto
               </p>
               {imageData ? (
@@ -123,26 +124,26 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
                   <img
                     src={imageData}
                     alt="Preview foto"
-                    className="w-full h-48 object-cover rounded-2xl border-2 border-gray-200"
+                    className="w-full h-48 object-cover rounded-2xl border border-line"
                   />
                   <button
                     onClick={() => setImageData(null)}
-                    className="absolute top-2 right-2 bg-white/80 rounded-full w-8 h-8 flex items-center justify-center text-sm hover:bg-white"
+                    className="absolute top-2 right-2 bg-surface text-ink border border-line rounded-full w-11 h-11 flex items-center justify-center hover:bg-accent-soft transition-colors"
                     aria-label="Hapus foto"
                   >
-                    {"\u2716"}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-48 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-purple-400 transition-colors"
+                  className="w-full h-48 border-2 border-dashed border-line rounded-2xl flex flex-col items-center justify-center gap-2 text-accent-strong hover:border-accent hover:bg-accent-soft transition-colors"
                 >
-                  <span className="text-4xl" aria-hidden="true">{"\ud83d\udcf7"}</span>
-                  <span className="font-heading text-sm text-foreground/70">
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></svg>
+                  <span className="font-heading text-base text-ink">
                     Ambil / Pilih Foto
                   </span>
-                  <span className="font-body text-xs text-foreground/40">
+                  <span className="font-body text-sm text-ink-muted">
                     Maks 500KB
                   </span>
                 </button>
@@ -160,7 +161,7 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
 
             {/* Word input */}
             <div className="mb-3">
-              <label className="font-heading text-sm font-semibold text-foreground/70 block mb-1">
+              <label className="font-heading text-base font-semibold text-ink block mb-1">
                 2. Kata
               </label>
               <input
@@ -169,14 +170,14 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
                 value={word}
                 onChange={(e) => setWord(e.target.value)}
                 placeholder="contoh: boneka"
-                className="min-w-0 w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                className="min-w-0 w-full min-h-[44px] bg-surface border border-line rounded-xl px-3 py-2 font-body text-base text-ink"
                 aria-label="Kata"
               />
             </div>
 
             {/* Syllables input */}
             <div className="mb-3">
-              <label className="font-heading text-sm font-semibold text-foreground/70 block mb-1">
+              <label className="font-heading text-base font-semibold text-ink block mb-1">
                 3. Suku Kata
               </label>
               <input
@@ -185,17 +186,17 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
                 value={syllables}
                 onChange={(e) => setSyllables(e.target.value)}
                 placeholder="bo, ne, ka"
-                className="min-w-0 w-full border border-gray-300 rounded-lg px-3 py-2 font-body text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                className="min-w-0 w-full min-h-[44px] bg-surface border border-line rounded-xl px-3 py-2 font-body text-base text-ink"
                 aria-label="Suku kata, pisahkan dengan koma"
               />
-              <p className="font-body text-[10px] text-foreground/40 mt-1">
+              <p className="font-body text-sm text-ink-muted mt-1">
                 Pisahkan dengan koma atau spasi
               </p>
             </div>
 
             {/* Difficulty */}
             <div className="mb-3">
-              <label className="font-heading text-sm font-semibold text-foreground/70 block mb-1">
+              <label className="font-heading text-base font-semibold text-ink block mb-1">
                 4. Kesulitan
               </label>
               <div className="flex gap-2">
@@ -203,10 +204,10 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
                   <button
                     key={d}
                     onClick={() => setDifficulty(d as 1 | 2 | 3)}
-                    className={`flex-1 py-2 rounded-lg font-heading text-sm border-2 min-h-[44px] ${
+                    className={`flex-1 py-2 rounded-xl font-heading text-base text-ink border-2 min-h-[44px] transition-colors ${
                       difficulty === d
-                        ? "bg-purple-100 border-purple-400"
-                        : "bg-white border-gray-200"
+                        ? "bg-accent-soft border-accent-strong"
+                        : "bg-surface border-line hover:bg-accent-soft"
                     }`}
                     aria-pressed={difficulty === d}
                   >
@@ -217,7 +218,7 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
             </div>
 
             {error && (
-              <p className="font-body text-sm text-red-500 mb-3" role="alert">
+              <p className="font-body text-sm text-danger-strong mb-3" role="alert">
                 {error}
               </p>
             )}
@@ -228,14 +229,14 @@ export default function PhotoWordCreator({ open, onClose }: PhotoWordCreatorProp
                   handleReset();
                   onClose();
                 }}
-                className="flex-1 bg-gray-100 text-foreground/70 font-heading text-base py-3 rounded-full"
+                className="flex-1 bg-paper text-ink border border-line font-heading text-base min-h-[48px] rounded-full hover:bg-accent-soft transition-colors"
               >
                 Batal
               </button>
               <button
                 onClick={handleSave}
                 disabled={!imageData || !word.trim() || !syllables.trim()}
-                className="flex-1 bg-purple-500 text-white font-heading text-base py-3 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-accent-strong text-on-accent font-heading text-base min-h-[48px] rounded-full hover:bg-ink transition-colors"
               >
                 Simpan
               </button>

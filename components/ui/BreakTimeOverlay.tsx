@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BigButton from "./BigButton";
 
 interface BreakTimeOverlayProps {
   onContinue: () => void;
@@ -60,100 +61,85 @@ export default function BreakTimeOverlay({
   return (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 px-4"
+        className="fixed inset-0 z-[90] flex items-center justify-center bg-[var(--scrim)] px-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
       >
         <motion.div
-          className="flex flex-col items-center bg-white rounded-3xl p-8 shadow-2xl max-w-sm w-full"
-          initial={{ scale: 0, y: 50 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0, y: 50 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="flex flex-col items-center bg-surface border border-line rounded-3xl p-8 max-w-sm w-full"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
+          transition={{ duration: 0.25 }}
         >
-          <span className="text-6xl mb-2">{"\u23f0"}</span>
-          <h2 className="text-2xl font-heading text-purple-700 mb-3">
+          <span className="flex items-center justify-center w-20 h-20 rounded-full bg-accent-soft text-accent-strong mb-3">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="13" r="8" />
+              <path d="M12 9v4l2.5 2M9 2h6" />
+            </svg>
+          </span>
+          <h2 className="text-2xl font-heading font-semibold text-ink mb-4">
             Waktunya Istirahat!
           </h2>
 
           {/* Session Summary */}
           {summary && !isResting && (
-            <motion.div
-              className="w-full bg-gradient-to-r from-yellow-50 to-purple-50 rounded-2xl p-4 mb-5 border-2 border-yellow-200"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-            >
-              <h3 className="font-heading text-sm font-semibold text-gray-600 text-center mb-3">
+            <div className="w-full bg-paper rounded-2xl p-4 mb-5">
+              <h3 className="font-heading text-base font-semibold text-ink-muted text-center mb-3">
                 Hasil Belajar Hari Ini
               </h3>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <div className="text-lg font-heading font-bold text-yellow-500">
+                  <div className="text-2xl font-heading font-bold text-ink">
                     {summary.starsEarned > 0 ? `+${summary.starsEarned}` : "0"}
                   </div>
-                  <div className="font-body text-xs text-gray-500">
-                    {"\u2b50"} Bintang
-                  </div>
+                  <div className="font-body text-sm text-ink-muted">Bintang</div>
                 </div>
                 <div>
-                  <div className="text-lg font-heading font-bold text-blue-500">
+                  <div className="text-2xl font-heading font-bold text-ink">
                     {summary.wordsLearned > 0 ? `+${summary.wordsLearned}` : "0"}
                   </div>
-                  <div className="font-body text-xs text-gray-500">
-                    {"\ud83d\udcda"} Kata Baru
-                  </div>
+                  <div className="font-body text-sm text-ink-muted">Kata Baru</div>
                 </div>
                 <div>
-                  <div className="text-lg font-heading font-bold text-green-500">
+                  <div className="text-2xl font-heading font-bold text-ink">
                     {summary.sessionsCompleted}
                   </div>
-                  <div className="font-body text-xs text-gray-500">
-                    {"\u2705"} Sesi
-                  </div>
+                  <div className="font-body text-sm text-ink-muted">Sesi</div>
                 </div>
               </div>
-              <p className="font-body text-xs text-gray-400 text-center mt-2">
-                Kamu belajar selama {minutes} menit! Hebat! {"\ud83d\udc4f"}
+              <p className="font-body text-sm text-ink-muted text-center mt-3">
+                Kamu belajar selama {minutes} menit! Hebat!
               </p>
-            </motion.div>
+            </div>
           )}
 
           {!isResting ? (
             <>
-              <p className="text-center font-body text-gray-600 mb-6">
-                Istirahat dulu ya biar segar lagi {"\ud83d\ude0a"}
+              <p className="text-center font-body text-lg text-ink mb-6">
+                Istirahat dulu ya biar segar lagi
               </p>
               <div className="flex flex-col gap-3 w-full">
-                <button
-                  onClick={handleBreak}
-                  className="w-full bg-green-400 rounded-2xl min-h-[64px] px-6 py-3 font-heading text-xl shadow-lg active:scale-95 transition-transform"
-                >
-                  {"\ud83d\udca4"} Istirahat 5 Menit
-                </button>
-                <button
-                  onClick={onContinue}
-                  className="w-full bg-blue-400 rounded-2xl min-h-[64px] px-6 py-3 font-heading text-xl shadow-lg active:scale-95 transition-transform text-white"
-                >
-                  {"\ud83d\udcaa"} Lanjut Belajar
-                </button>
+                <BigButton tone="good" onClick={handleBreak} className="w-full">
+                  Istirahat 5 Menit
+                </BigButton>
+                <BigButton tone="quiet" onClick={onContinue} className="w-full">
+                  Lanjut Belajar
+                </BigButton>
               </div>
             </>
           ) : (
             <>
-              <div className="text-6xl font-heading text-green-600 my-4">
+              <div className="text-6xl font-heading font-semibold text-good-strong my-4 tabular-nums">
                 {formatTime(secondsLeft)}
               </div>
-              <p className="text-center font-body text-gray-600 mb-6">
-                Istirahat sebentar ya... {"\ud83d\ude0a"}
+              <p className="text-center font-body text-lg text-ink mb-6">
+                Istirahat sebentar ya…
               </p>
-              <button
-                onClick={onContinue}
-                className="w-full bg-blue-400 rounded-2xl min-h-[64px] px-6 py-3 font-heading text-xl shadow-lg active:scale-95 transition-transform text-white"
-              >
+              <BigButton onClick={onContinue} className="w-full">
                 Kembali Belajar
-              </button>
+              </BigButton>
             </>
           )}
         </motion.div>

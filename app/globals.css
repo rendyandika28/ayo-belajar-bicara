@@ -1,119 +1,99 @@
+/* Hallmark · redesign: full · scope: app · route: all · theme: brand (kept) · genre: playful · signature: today's four figures set big on one surface */
+/* critique: brand kept (cream paper, deep-purple ink); one purple accent, green only for done, red only in the reset zone */
+/* Hallmark · dropped onBack={handleBackFromMenu}, onClick={() => { onBack(); playPop(); }} · suku-kata TopBar replaced by GameShell onBack, which also respects the focus-mode lock */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #FFF9E6;
-  --foreground: #2D1B69;
+  --paper: #F6F2EA;
+  --surface: #FAF8F3;
+  --ink: #3F3560;
+  --ink-muted: #6F6889;
+  --line: #EAE4D8;
+  --accent: #8A72D6;
+  --accent-strong: #6A55B8;
+  --accent-soft: #F1ECFA;
+  --accent-muted: #9080C9; /* 3.2:1 on surface */
+  --on-accent: #FFFFFF;
+  --good: #6BAF8A;
+  --warn: #D9A55A;
+  --danger: #C9675C;
+  --danger-soft: #FCEBE8;
+  --good-strong: #3E7D5A;
+  --warn-strong: #9A6A1E;
+  --danger-strong: #A9483E;
+
+  --scrim: rgba(63, 53, 96, 0.4);
 }
 
+html, body { overflow-x: clip; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-fade { animation: none !important; }
+  .home-card { transition: none !important; transform: none !important; }
+}
+@keyframes pd-fade { from { opacity: 0; } to { opacity: 1; } }
+.pd-fade { animation: pd-fade 200ms ease-out; }
+/* :where() = zero specificity, so Tailwind opacity utilities still win */
+:where(:disabled) { cursor: not-allowed; }
+:focus-visible { outline: 3px solid var(--accent-strong); outline-offset: 2px; }
+
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: var(--ink);
+  background: var(--paper);
   min-height: 100vh;
   min-height: 100dvh;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Islamic geometric pattern background */
-.islamic-pattern {
-  background-color: #E8F5E9;
-  background-image:
-    linear-gradient(30deg, rgba(0, 100, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 100, 0, 0.05) 87.5%, rgba(0, 100, 0, 0.05)),
-    linear-gradient(150deg, rgba(0, 100, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 100, 0, 0.05) 87.5%, rgba(0, 100, 0, 0.05)),
-    linear-gradient(30deg, rgba(0, 100, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 100, 0, 0.05) 87.5%, rgba(0, 100, 0, 0.05)),
-    linear-gradient(150deg, rgba(0, 100, 0, 0.05) 12%, transparent 12.5%, transparent 87%, rgba(0, 100, 0, 0.05) 87.5%, rgba(0, 100, 0, 0.05)),
-    linear-gradient(60deg, rgba(212, 175, 55, 0.08) 25%, transparent 25.5%, transparent 75%, rgba(212, 175, 55, 0.08) 75%, rgba(212, 175, 55, 0.08)),
-    linear-gradient(60deg, rgba(212, 175, 55, 0.08) 25%, transparent 25.5%, transparent 75%, rgba(212, 175, 55, 0.08) 75%, rgba(212, 175, 55, 0.08));
-  background-size: 80px 140px;
-  background-position: 0 0, 0 0, 40px 70px, 40px 70px, 0 0, 40px 70px;
-}
-
-/* Confetti animation - GPU accelerated */
-@-webkit-keyframes confetti-fall {
-  0% { -webkit-transform: translateY(-100vh) rotate(0deg); transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-  100% { -webkit-transform: translateY(100vh) rotate(720deg); transform: translateY(100vh) rotate(720deg); opacity: 0; }
-}
+/* Confetti — small, once (calm mode renders static dots instead) */
 @keyframes confetti-fall {
-  0% { -webkit-transform: translateY(-100vh) rotate(0deg); transform: translateY(-100vh) rotate(0deg); opacity: 1; }
-  100% { -webkit-transform: translateY(100vh) rotate(720deg); transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
 }
-
 .confetti-piece {
-  -webkit-animation: confetti-fall 2.5s ease-in forwards;
-  animation: confetti-fall 2.5s ease-in forwards;
+  animation: confetti-fall 2s ease-in forwards;
   will-change: transform, opacity;
   contain: strict;
 }
 
-/* Shake animation */
-@-webkit-keyframes shake {
-  0%, 100% { -webkit-transform: translateX(0); transform: translateX(0); }
-  25% { -webkit-transform: translateX(-8px); transform: translateX(-8px); }
-  75% { -webkit-transform: translateX(8px); transform: translateX(8px); }
-}
-@keyframes shake {
-  0%, 100% { -webkit-transform: translateX(0); transform: translateX(0); }
-  25% { -webkit-transform: translateX(-8px); transform: translateX(-8px); }
-  75% { -webkit-transform: translateX(8px); transform: translateX(8px); }
-}
-
-.animate-shake {
-  -webkit-animation: shake 0.4s ease-in-out;
-  animation: shake 0.4s ease-in-out;
-  will-change: transform;
-}
-
-/* Pulse mic - use transform scale instead of box-shadow */
-@-webkit-keyframes pulse-mic {
-  0%, 100% { -webkit-transform: scale(1); transform: scale(1); opacity: 1; }
-  50% { -webkit-transform: scale(1.15); transform: scale(1.15); opacity: 0.85; }
-}
+/* Mic listening pulse */
 @keyframes pulse-mic {
-  0%, 100% { -webkit-transform: scale(1); transform: scale(1); opacity: 1; }
-  50% { -webkit-transform: scale(1.15); transform: scale(1.15); opacity: 0.85; }
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.08); opacity: 0.85; }
 }
-
 .animate-pulse-mic {
-  -webkit-animation: pulse-mic 1.5s ease-in-out infinite;
   animation: pulse-mic 1.5s ease-in-out infinite;
   will-change: transform;
 }
 
-/* Blink animation */
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-.animate-blink {
-  animation: blink 0.6s ease-in-out 3;
-}
-
-/* Star counter bounce */
 @keyframes star-bounce {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.3); }
+  50% { transform: scale(1.15); }
 }
-
 .animate-star-bounce {
   animation: star-bounce 0.3s ease-in-out;
   will-change: transform;
 }
 
+/* Every keyframe animation above: off for reduced motion and calm mode */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-mic, .animate-star-bounce { animation: none !important; }
+  .confetti-piece { display: none; }
+}
+body.calm-mode-active .animate-pulse-mic,
+body.calm-mode-active .animate-star-bounce,
+body.calm-mode-active .pd-fade { animation: none !important; }
+body.calm-mode-active .confetti-piece { display: none; }
+body.calm-mode-active .home-card { transition: none !important; transform: none !important; }
+
 /* Focus Mode — body lock + navigation blocker */
-body.focus-mode-active {
-  overflow: hidden !important;
+/* Focus mode keeps scroll (content stays reachable) but blocks pull-to-refresh / overscroll navigation */
+html.focus-mode-active {
+  overscroll-behavior: none;
 }
 
-/* iOS Safari pseudo-fullscreen fallback (no Fullscreen API) */
-@supports not (selector(:fullscreen)) {
-  body.focus-mode-active {
-    position: fixed !important;
-    width: 100% !important;
-    height: 100% !important;
-  }
-}
 
 body.focus-mode-active a[href="/"],
 body.focus-mode-active a[href="/islami"] {
@@ -121,8 +101,9 @@ body.focus-mode-active a[href="/islami"] {
   opacity: 0.3 !important;
 }
 
-/* Calm Mode — reduced motion */
+/* Calm Mode — any remaining transitions/animations end instantly */
 body.calm-mode-active * {
   animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
 }

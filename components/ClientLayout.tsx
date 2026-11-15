@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MotionConfig, MotionGlobalConfig } from "framer-motion";
 import FocusModeWrapper from "@/components/focus/FocusModeWrapper";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import { useAppStore } from "@/store/useAppStore";
@@ -21,7 +22,8 @@ export default function ClientLayout({
 
   useEffect(() => {
     // Register service worker
-    if ("serviceWorker" in navigator) {
+    // Dev chunk names never change, so the cache-first SW would pin stale JS.
+    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
 
@@ -59,6 +61,8 @@ export default function ClientLayout({
   const calmMode = useAppStore((s) => s.calmMode);
   useEffect(() => {
     document.body.classList.toggle("calm-mode-active", calmMode);
+    // reducedMotion is read once per element at mount; skipAnimations is checked on every animation start.
+    MotionGlobalConfig.skipAnimations = calmMode;
   }, [calmMode]);
 
   const handleInstall = async () => {
@@ -78,82 +82,41 @@ export default function ClientLayout({
   };
 
   return (
-    <>
+    // Calm mode (or the OS reduced-motion setting) turns off every framer-motion animation.
+    <MotionConfig reducedMotion={calmMode ? "always" : "user"}>
       <OnboardingOverlay />
       {children}
       <FocusModeWrapper />
 
       {showBanner && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: "1rem",
-            left: "1rem",
-            right: "1rem",
-            maxWidth: "420px",
-            margin: "0 auto",
-            padding: "1rem 1.25rem",
-            backgroundColor: "#FFF9E6",
-            border: "2px solid #7C3AED",
-            borderRadius: "1rem",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            zIndex: 9999,
-            fontFamily: "Fredoka, sans-serif",
-          }}
-        >
-          <span style={{ fontSize: "2rem", flexShrink: 0 }}>{"\uD83D\uDCF2"}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontWeight: 600,
-                color: "#7C3AED",
-                fontSize: "0.95rem",
-              }}
-            >
-              Pasang Aplikasi
-            </div>
-            <div style={{ color: "#6B7280", fontSize: "0.8rem" }}>
-              Akses lebih cepat dari layar utama
-            </div>
+        <div className="fixed bottom-4 inset-x-4 mx-auto max-w-[420px] z-[9999] flex items-center gap-3 p-4 bg-surface border border-line rounded-2xl font-heading">
+          <span className="flex items-center justify-center w-11 h-11 shrink-0 rounded-full bg-accent-soft text-accent-strong">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="6" y="2" width="12" height="20" rx="2" />
+              <path d="M12 7v7m-3-3 3 3 3-3" />
+            </svg>
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-ink text-base">Pasang Aplikasi</div>
+            <div className="font-body text-ink-muted text-sm">Akses lebih cepat dari layar utama</div>
           </div>
           <button
             onClick={handleInstall}
-            style={{
-              padding: "0.5rem 1rem",
-              fontSize: "0.85rem",
-              fontFamily: "Fredoka, sans-serif",
-              fontWeight: 600,
-              color: "white",
-              backgroundColor: "#7C3AED",
-              border: "none",
-              borderRadius: "9999px",
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
+            className="shrink-0 min-h-[44px] px-4 rounded-full bg-accent-strong text-on-accent font-semibold text-base hover:bg-ink transition-colors"
           >
             Pasang
           </button>
           <button
             onClick={handleDismiss}
             aria-label="Tutup"
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: "1.25rem",
-              color: "#9CA3AF",
-              cursor: "pointer",
-              padding: "0.25rem",
-              lineHeight: 1,
-              flexShrink: 0,
-            }}
+            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full text-ink-muted hover:bg-accent-soft transition-colors"
           >
-            {"\u00D7"}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M6 6l12 12M18 6 6 18" />
+            </svg>
           </button>
         </div>
       )}
-    </>
+    </MotionConfig>
   );
 }

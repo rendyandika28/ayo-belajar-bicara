@@ -2,27 +2,29 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import StarCounter from "@/components/ui/StarCounter";
-import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameShell from "@/components/ui/GameShell";
 import { useAppStore } from "@/store/useAppStore";
 import { playPop } from "@/lib/sounds";
 
 const containerVariants = {
   hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
+  visible: { transition: { staggerChildren: 0.06 } },
 };
 
 const cardVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, stiffness: 300, damping: 20 },
-  },
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.25, ease: "easeOut" as const } },
+};
+
+const svgProps = {
+  width: 36,
+  height: 36,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
 };
 
 export default function IslamiPage() {
@@ -30,89 +32,50 @@ export default function IslamiPage() {
 
   const menuCards = [
     {
-      icon: "ا",
+      icon: <span className="font-arabic text-5xl leading-none" dir="rtl" lang="ar">ا</span>,
       label: "Huruf Hijaiyah",
       href: "/islami/hijaiyah",
       subtitle: "Belajar 29 huruf hijaiyah",
       progress: `${hijaiyahLearned.length}/29 huruf`,
-      bg: "bg-emerald-100",
-      border: "border-emerald-300",
-      progressColor: "bg-emerald-500",
-      progressTrack: "bg-emerald-200",
       progressPercent: (hijaiyahLearned.length / 29) * 100,
-      iconStyle: "font-amiri text-4xl" as const,
     },
     {
-      icon: "\ud83e\udd32",
+      // open hands (doa)
+      icon: (
+        <svg {...svgProps} aria-hidden="true">
+          <path d="M7 21v-5l-3-4V6a1.5 1.5 0 0 1 3 0v5" />
+          <path d="M17 21v-5l3-4V6a1.5 1.5 0 0 0-3 0v5" />
+          <path d="M7 11l3 3v7M17 11l-3 3v7" />
+        </svg>
+      ),
       label: "Doa Harian",
       href: "/islami/doa",
       subtitle: "Belajar doa sehari-hari",
       progress: `${doasAttempted.length}/10 doa`,
-      bg: "bg-amber-50",
-      border: "border-amber-300",
-      progressColor: "bg-amber-500",
-      progressTrack: "bg-amber-200",
       progressPercent: (doasAttempted.length / 10) * 100,
-      iconStyle: "text-4xl" as const,
     },
     {
-      icon: "\u2728",
+      // sparkle
+      icon: (
+        <svg {...svgProps} aria-hidden="true">
+          <path d="M12 3l1.9 5.6L19.5 10.5 13.9 12.4 12 18l-1.9-5.6L4.5 10.5l5.6-1.9z" />
+          <path d="M19 17v4M17 19h4" />
+        </svg>
+      ),
       label: "Asmaul Husna",
       href: "/islami/asmaul-husna",
       subtitle: "99 nama Allah yang indah",
       progress: `${asmaulHusnaLearned.length}/10 nama`,
-      bg: "bg-emerald-50",
-      border: "border-emerald-200",
-      progressColor: "bg-emerald-400",
-      progressTrack: "bg-emerald-100",
       progressPercent: (asmaulHusnaLearned.length / 10) * 100,
-      iconStyle: "text-4xl" as const,
     },
   ];
 
   return (
-    <motion.div
-      className="islamic-pattern min-h-screen px-4 py-6 pb-12"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.4 }}
-    >
-      {/* Top bar */}
-      <div className="flex items-center justify-between mb-6">
-        <Link href="/">
-          <motion.button
-            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            aria-label="Kembali ke beranda"
-          
-            onClick={playPop}>
-            {"\ud83c\udfe0"}
-          </motion.button>
-        </Link>
+    <GameShell title="Belajar Islami">
+      <p className="text-center font-body text-lg text-ink-muted mb-5">
+        Yuk belajar agama Islam bersama!
+      </p>
 
-        <div className="flex items-center gap-2">
-          <FocusModeButton />
-          <StarCounter />
-        </div>
-      </div>
-
-      {/* Title */}
-      <motion.div
-        className="text-center mb-8"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, type: "spring", stiffness: 300, damping: 20 }}
-      >
-        <h1 className="font-heading text-3xl sm:text-4xl font-bold text-emerald-800 leading-tight">
-          Belajar Islami {"\ud83d\udd4c"}
-        </h1>
-        <p className="mt-2 font-body text-emerald-600/80 text-sm">
-          Yuk belajar agama Islam bersama!
-        </p>
-      </motion.div>
-
-      {/* Menu Cards */}
       <motion.div
         className="flex flex-col gap-4 max-w-md mx-auto"
         variants={containerVariants}
@@ -120,62 +83,35 @@ export default function IslamiPage() {
         animate="visible"
       >
         {menuCards.map((card) => (
-          <Link key={card.href} href={card.href}>
-            <motion.div
-              className={`${card.bg} ${card.border} rounded-3xl p-5 flex items-center gap-4 shadow-lg border-2 cursor-pointer min-h-[100px]`}
-              variants={cardVariants}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.95 }}
+          <motion.div key={card.href} variants={cardVariants}>
+            <Link
+              href={card.href}
+              onClick={playPop}
+              className="bg-surface border border-line rounded-3xl p-5 flex items-center gap-4 min-h-[100px] transition-colors hover:bg-accent-soft active:bg-line"
             >
-              {/* Icon */}
-              <div className="w-16 h-16 flex items-center justify-center bg-white/80 rounded-2xl shadow-sm flex-shrink-0">
-                <span
-                  className={card.iconStyle}
-                  style={
-                    card.iconStyle.includes("font-amiri")
-                      ? { fontFamily: "var(--font-amiri)" }
-                      : undefined
-                  }
-                  dir={card.iconStyle.includes("font-amiri") ? "rtl" : undefined}
-                  lang={card.iconStyle.includes("font-amiri") ? "ar" : undefined}
-                >
-                  {card.icon}
-                </span>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 min-w-0">
-                <h2 className="font-heading text-xl font-bold text-foreground/90">
-                  {card.label}
-                </h2>
-                <p className="font-body text-sm text-foreground/60 mt-0.5">
-                  {card.subtitle}
-                </p>
-
-                {/* Progress bar */}
-                <div className="mt-2">
-                  <div className={`w-full h-2 ${card.progressTrack} rounded-full overflow-hidden`}>
-                    <motion.div
-                      className={`h-full ${card.progressColor} rounded-full`}
-                      initial={{ width: 0 }}
-                      animate={{ width: `${card.progressPercent}%` }}
-                      transition={{ delay: 0.5, duration: 0.8, ease: "easeOut" }}
-                    />
-                  </div>
-                  <p className="font-body text-xs text-foreground/50 mt-1">
-                    {card.progress}
-                  </p>
-                </div>
-              </div>
-
-              {/* Arrow */}
-              <span className="text-foreground/30 text-2xl flex-shrink-0">
-                {"\u203a"}
+              <span className="w-16 h-16 flex items-center justify-center bg-paper text-good-strong rounded-2xl flex-shrink-0">
+                {card.icon}
               </span>
-            </motion.div>
-          </Link>
+
+              <span className="flex-1 min-w-0">
+                <span className="block font-heading text-xl font-bold text-ink">{card.label}</span>
+                <span className="block font-body text-base text-ink-muted">{card.subtitle}</span>
+                <span className="block mt-2 w-full h-2 bg-line rounded-full overflow-hidden">
+                  <span
+                    className="block h-full bg-good-strong rounded-full origin-left"
+                    style={{ transform: `scaleX(${card.progressPercent / 100})` }}
+                  />
+                </span>
+                <span className="block font-body text-sm text-ink-muted mt-1">{card.progress}</span>
+              </span>
+
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-ink-muted flex-shrink-0">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </Link>
+          </motion.div>
         ))}
       </motion.div>
-    </motion.div>
+    </GameShell>
   );
 }

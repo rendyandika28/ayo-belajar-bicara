@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
 import { playPop } from "@/lib/sounds";
 
@@ -9,20 +8,23 @@ export default function CalmModeToggle() {
   const toggleCalmMode = useAppStore((s) => s.toggleCalmMode);
 
   return (
-    <motion.button
-      className={`flex items-center gap-1 bg-white/80 rounded-full px-3 py-2 shadow-md border-2 text-sm font-heading min-h-[44px] ${
-        calmMode ? "border-green-300 bg-green-50" : "border-gray-200"
+    <button
+      type="button"
+      className={`flex items-center gap-2 rounded-full px-3 border font-heading text-sm min-h-[44px] min-w-[44px] transition-colors ${
+        calmMode
+          ? "bg-accent-soft border-accent text-accent-strong"
+          : "bg-surface border-line text-ink hover:bg-accent-soft"
       }`}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
       onClick={() => {
         toggleCalmMode();
         playPop();
       }}
       aria-label={calmMode ? "Nonaktifkan mode tenang" : "Aktifkan mode tenang"}
     >
-      <span className="text-lg">{calmMode ? "\ud83e\udd2b" : "\ud83c\udf1f"}</span>
-      <span className="hidden sm:inline text-xs">{calmMode ? "Tenang" : "Mode Tenang"}</span>
-    </motion.button>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+      </svg>
+      <span className="hidden sm:inline">{calmMode ? "Tenang" : "Mode Tenang"}</span>
+    </button>
   );
 }

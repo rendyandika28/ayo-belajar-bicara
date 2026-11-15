@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { speak, speakSyllable } from "@/lib/speech";
 import { words, categories } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
-import StarCounter from "@/components/ui/StarCounter";
-import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameShell from "@/components/ui/GameShell";
+import BigButton from "@/components/ui/BigButton";
 import GameTutorial from "@/components/GameTutorial";
 import { playPop } from "@/lib/sounds";
 
@@ -97,29 +96,21 @@ export default function KartuKataPage() {
   // Slide animation variants
   const slideVariants = {
     enter: (dir: number) => ({
-      x: dir > 0 ? 300 : -300,
+      x: dir > 0 ? 60 : -60,
       opacity: 0,
-      scale: 0.9,
     }),
     center: {
       x: 0,
       opacity: 1,
-      scale: 1,
     },
     exit: (dir: number) => ({
-      x: dir > 0 ? -300 : 300,
+      x: dir > 0 ? -60 : 60,
       opacity: 0,
-      scale: 0.9,
     }),
   };
 
   return (
-    <motion.div
-      className="min-h-screen flex flex-col px-4 py-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <GameShell title="Kartu Kata">
       <GameTutorial
         gameKey="kartu-kata"
         steps={[
@@ -127,71 +118,45 @@ export default function KartuKataPage() {
           { emoji: "\ud83d\udd0a", text: "Ketuk kartu untuk mendengar cara membaca kata yang benar." },
         ]}
       />
-      {/* Top bar */}
-      <div className="relative flex items-center justify-between mb-4">
-        <Link href="/" className="z-10">
-          <motion.button
-            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            aria-label="Kembali ke beranda"
-          
-            onClick={playPop}>
-            {"\ud83c\udfe0"}
-          </motion.button>
-        </Link>
-
-        <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-xl sm:text-2xl font-bold text-foreground whitespace-nowrap pointer-events-none">
-          Kartu Kata
-        </h1>
-
-        <div className="flex items-center gap-2 z-10">
-          <FocusModeButton />
-          <StarCounter />
-        </div>
-      </div>
 
       {/* Category filter */}
       <div className="mb-4 -mx-4 px-4">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {categories.map((cat) => (
-            <motion.button
+            <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full font-heading text-sm min-h-[44px] border-2 transition-colors ${
+              aria-pressed={selectedCategory === cat.id}
+              className={`flex-shrink-0 flex items-center gap-1.5 px-4 rounded-full font-heading text-base min-h-[44px] border transition-colors ${
                 selectedCategory === cat.id
-                  ? "bg-foreground text-white border-foreground shadow-lg"
-                  : "bg-white border-gray-200 text-foreground/80 shadow-sm"
+                  ? "bg-accent-soft text-ink border-accent-strong"
+                  : "bg-surface border-line text-ink-muted hover:bg-accent-soft"
               }`}
-              whileTap={{ scale: 0.95 }}
             >
-              <span>{cat.emoji}</span>
+              <span aria-hidden="true">{cat.emoji}</span>
               <span>{cat.label}</span>
-            </motion.button>
+            </button>
           ))}
         </div>
       </div>
 
       {/* Flashcard area */}
       <div
-        className="flex-1 flex flex-col items-center justify-center"
+        className="flex flex-col items-center"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         {allWords.length === 0 ? (
-          <div className="text-center font-body text-foreground/60">
-            <p className="text-4xl mb-3">{"\ud83d\ude22"}</p>
-            <p>Belum ada kata di kategori ini.</p>
-          </div>
+          <p className="text-center font-body text-lg text-ink-muted py-12">
+            Belum ada kata di kategori ini.
+          </p>
         ) : (
           <>
-            {/* Card counter */}
-            <p className="font-body text-sm text-foreground/50 mb-3">
+            <p className="font-body text-base text-ink-muted mb-3">
               {currentIndex + 1} / {allWords.length}
             </p>
 
-            {/* Flashcard */}
-            <div className="relative w-full max-w-sm" style={{ minHeight: 280 }}>
+            <div className="relative w-full max-w-sm" style={{ minHeight: 340 }}>
               <AnimatePresence mode="wait" custom={direction}>
                 {currentWord && (
                   <motion.div
@@ -201,118 +166,99 @@ export default function KartuKataPage() {
                     initial="enter"
                     animate="center"
                     exit="exit"
-                    transition={{
-                      type: "tween",
-                      duration: 0.25,
-                    }}
+                    transition={{ type: "tween", duration: 0.25 }}
                     onClick={handleCardTap}
-                    className="absolute inset-0 bg-white rounded-3xl shadow-xl border-2 border-gray-100 p-6 flex flex-col items-center justify-center cursor-pointer select-none"
+                    className="absolute inset-0 bg-surface rounded-3xl border border-line p-6 flex flex-col items-center justify-center cursor-pointer select-none"
                   >
-                    {/* Icon */}
                     {currentWord.image ? (
-                      <motion.div
-                        className="w-40 h-40 sm:w-56 sm:h-56 rounded-2xl overflow-hidden mb-4"
-                        whileTap={{ scale: 1.05 }}
-                        transition={{ type: "spring", stiffness: 400 }}
-                      >
+                      <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden mb-4">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={currentWord.image}
                           alt={currentWord.word}
                           className="w-full h-full object-cover"
                         />
-                      </motion.div>
+                      </div>
                     ) : (
-                      <motion.span
-                        className="text-6xl sm:text-8xl leading-none mb-4"
-                        whileTap={{ scale: 1.2 }}
-                        transition={{ type: "spring", stiffness: 400 }}
-                      >
+                      <span className="text-7xl sm:text-8xl leading-none mb-4" aria-hidden="true">
                         {currentWord.emoji}
-                      </motion.span>
+                      </span>
                     )}
 
-                    {/* Word */}
-                    <h2 className="font-heading text-2xl sm:text-3xl font-bold text-foreground mb-3">
+                    <h2 className="font-heading text-[40px] sm:text-5xl leading-tight font-bold text-ink mb-3">
                       {currentWord.word}
                     </h2>
 
-                    {/* Syllable breakdown */}
                     <div className="flex items-center gap-2 flex-wrap justify-center">
                       {currentWord.syllables.map((syl, i) => (
                         <span key={i} className="flex items-center gap-2">
-                          <motion.button
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleSyllableTap(syl);
                             }}
-                            className="bg-blue-100 hover:bg-blue-200 text-blue-800 font-heading text-xl px-4 py-2 rounded-2xl min-w-[56px] min-h-[48px] border-2 border-blue-200 active:bg-blue-300 transition-colors"
-                            whileTap={{ scale: 0.9 }}
+                            className="bg-accent-soft text-ink font-heading text-xl px-4 rounded-2xl min-w-[56px] min-h-[48px] hover:bg-line active:bg-line transition-colors"
                           >
                             {syl}
-                          </motion.button>
+                          </button>
                           {i < currentWord.syllables.length - 1 && (
-                            <span className="text-foreground/30 font-body text-lg">
+                            <span className="text-ink-muted font-body text-lg" aria-hidden="true">
                               -
                             </span>
                           )}
                         </span>
                       ))}
                     </div>
-
-                    {/* Tap hint */}
-                    <p className="mt-4 text-xs text-foreground/40 font-body">
-                      {"\ud83d\udd0a"} Ketuk untuk dengar
-                    </p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
 
-            {/* Navigation arrows */}
-            <div className="flex items-center justify-center gap-6 mt-6">
-              <motion.button
+            <div className="flex items-center justify-center gap-3 mt-6">
+              <BigButton
+                tone="quiet"
                 onClick={goPrev}
                 disabled={currentIndex === 0}
-                className={`w-16 h-16 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-2 transition-colors ${
-                  currentIndex === 0
-                    ? "bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed"
-                    : "bg-white border-gray-200 text-foreground active:bg-gray-100"
-                }`}
-                whileTap={currentIndex > 0 ? { scale: 0.9 } : {}}
                 aria-label="Sebelumnya"
               >
-                {"\u25c0\ufe0f"}
-              </motion.button>
+                <ArrowIcon dir="left" />
+              </BigButton>
 
-              <motion.button
-                onClick={handleCardTap}
-                className="w-16 h-16 flex items-center justify-center rounded-full bg-green-200 border-2 border-green-300 text-2xl shadow-lg active:bg-green-300 transition-colors"
-                whileTap={{ scale: 0.9 }}
-                aria-label="Ucapkan kata"
-              >
-                {"\ud83d\udd0a"}
-              </motion.button>
+              <BigButton onClick={handleCardTap}>
+                <SpeakerIcon />
+                <span>Dengar</span>
+              </BigButton>
 
-              <motion.button
+              <BigButton
+                tone="quiet"
                 onClick={goNext}
                 disabled={currentIndex >= allWords.length - 1}
-                className={`w-16 h-16 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-2 transition-colors ${
-                  currentIndex >= allWords.length - 1
-                    ? "bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed"
-                    : "bg-white border-gray-200 text-foreground active:bg-gray-100"
-                }`}
-                whileTap={
-                  currentIndex < allWords.length - 1 ? { scale: 0.9 } : {}
-                }
                 aria-label="Selanjutnya"
               >
-                {"\u25b6\ufe0f"}
-              </motion.button>
+                <ArrowIcon dir="right" />
+              </BigButton>
             </div>
           </>
         )}
       </div>
-    </motion.div>
+    </GameShell>
+  );
+}
+
+function SpeakerIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M11 5 6 9H3v6h3l5 4V5z" />
+      <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+      <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+    </svg>
+  );
+}
+
+function ArrowIcon({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {dir === "left" ? <path d="M15 5l-7 7 7 7" /> : <path d="M9 5l7 7-7 7" />}
+    </svg>
   );
 }

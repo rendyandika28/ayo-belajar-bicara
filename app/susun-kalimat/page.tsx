@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
 import { simpleSentences } from "@/data/words";
 import { speak } from "@/lib/speech";
-import StarCounter from "@/components/ui/StarCounter";
+import GameShell from "@/components/ui/GameShell";
+import BigButton from "@/components/ui/BigButton";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 import RewardOverlay from "@/components/ui/RewardOverlay";
 import { playPop } from "@/lib/sounds";
@@ -53,7 +53,9 @@ export default function SusunKalimatPage() {
     setUsedIndices(new Set());
     setFeedback(null);
     setLocked(false);
-  }, [currentSentence]);
+    // `sentences` too: after "Main Lagi" the new first sentence can equal the
+    // last one played, and the board must still reset (locked was left true).
+  }, [currentSentence, sentences]);
 
   const handleWordTap = useCallback(
     (word: string, wordIndex: number) => {
@@ -121,48 +123,36 @@ export default function SusunKalimatPage() {
 
   if (sentences.length === 0) {
     return (
-      <div className="min-h-screen bg-orange-50 flex items-center justify-center">
-        <p className="font-heading text-lg text-foreground/60">Memuat...</p>
-      </div>
+      <GameShell title="Susun Kalimat">
+        <p className="font-heading text-xl text-ink-muted text-center py-16">Memuat…</p>
+      </GameShell>
     );
   }
 
   if (finished) {
-    const celebrationEmoji = score >= 7 ? "\ud83c\udfc6" : score >= 5 ? "\u2b50" : "\ud83d\udc4f";
     const message = score >= 7 ? "Luar biasa!" : score >= 5 ? "Bagus sekali!" : "Ayo coba lagi!";
 
     return (
-      <div className="min-h-screen bg-orange-50 flex flex-col items-center justify-center px-6 text-center">
-        <span className="text-7xl mb-6">{celebrationEmoji}</span>
-        <h2 className="font-heading text-3xl font-bold text-foreground mb-2">{message}</h2>
-        <p className="font-body text-lg text-foreground/70 mb-2">
-          Kamu berhasil menyusun {score} dari {SESSION_SIZE} kalimat!
-        </p>
-        <div className="flex gap-1 mb-8">
-          {Array.from({ length: score }).map((_, i) => (
-            <span key={i} className="text-2xl">{"\u2b50"}</span>
-          ))}
-        </div>
-        <div className="flex flex-col gap-3">
-          <motion.button
-            className="bg-orange-500 text-white font-heading text-lg px-8 py-3 rounded-full shadow-lg"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleRestart}
-          >
-            {"\ud83d\udd04"} Main Lagi
-          </motion.button>
-          <Link href="/">
-            <motion.button
-              className="bg-white text-foreground/70 font-heading text-base px-8 py-2.5 rounded-full shadow-md border-2 border-gray-200"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              {"\ud83c\udfe0"} Pulang
-            </motion.button>
-          </Link>
-        </div>
-      </div>
+      <GameShell title="Susun Kalimat">
+        <section className="bg-surface rounded-3xl border border-line p-6 sm:p-8 flex flex-col items-center text-center gap-4">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" className="text-warn" aria-hidden="true">
+            <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z" />
+          </svg>
+          <h2 className="font-heading text-3xl font-bold text-ink">{message}</h2>
+          <p className="font-body text-xl text-ink-muted">
+            Kamu berhasil menyusun {score} dari {SESSION_SIZE} kalimat!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-2">
+            <BigButton onClick={handleRestart}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              Main Lagi
+            </BigButton>
+          </div>
+        </section>
+      </GameShell>
     );
   }
 
@@ -170,67 +160,51 @@ export default function SusunKalimatPage() {
   const progress = ((currentIdx + 1) / SESSION_SIZE) * 100;
 
   return (
-    <div className="min-h-screen bg-orange-50 flex flex-col">
+    <GameShell title="Susun Kalimat">
       <ConfettiEffect show={showConfetti} />
       <RewardOverlay show={showReward} message="Hebat!" emoji={"\ud83c\udfc6"} onClose={handleRewardDone} />
 
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-orange-50/90 backdrop-blur-sm px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-3">
-          <Link href="/">
-            <motion.button
-              className="w-12 h-12 min-w-[48px] min-h-[48px] bg-white rounded-full flex items-center justify-center shadow-md text-2xl"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              aria-label="Kembali"
-            
-            onClick={playPop}>
-              {"\ud83c\udfe0"}
-            </motion.button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <StarCounter />
-          </div>
-        </div>
-
-        {/* Progress bar */}
-        <div className="w-full bg-white/80 rounded-full h-2.5 overflow-hidden shadow-inner">
+      {/* Progress */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex-1 bg-line rounded-full h-2.5 overflow-hidden">
           <motion.div
-            className="bg-orange-400 h-full rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className="bg-accent h-full rounded-full origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progress / 100 }}
+            transition={{ duration: 0.3 }}
           />
         </div>
-        <p className="font-body text-xs text-foreground/50 text-right mt-1">
+        <p className="font-body text-base text-ink-muted">
           {currentIdx + 1} / {SESSION_SIZE}
         </p>
       </div>
 
-      {/* Game area */}
-      <div className="flex-1 flex flex-col px-4 py-6">
-        {/* Target sentence hint */}
+      <section className="bg-surface rounded-3xl border border-line p-5 sm:p-8 flex flex-col gap-6">
+        {/* Target sentence slots */}
         <motion.div
-          className="text-center mb-6"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
           key={currentIdx}
         >
-          <p className="font-body text-sm text-foreground/50 mb-1">Susun kalimat ini:</p>
-          <div className="flex justify-center gap-1.5 flex-wrap">
+          <p className="font-body text-xl text-ink-muted mb-3">Susun kalimat ini:</p>
+          <div className="flex justify-center gap-2 flex-wrap">
             {correctWords.map((word, i) => (
               <div
                 key={i}
-                className={`w-14 h-8 rounded-lg border-2 border-dashed flex items-center justify-center transition-colors ${
-                  selectedWords[i]
-                    ? "border-green-400 bg-green-50"
+                className={`min-w-[64px] h-12 px-2 rounded-xl border-2 flex items-center justify-center transition-colors ${
+                  feedback === "correct"
+                    ? "border-good-strong bg-paper"
                     : feedback === "wrong"
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-300 bg-white/50"
+                    ? "border-warn bg-paper"
+                    : selectedWords[i]
+                    ? "border-accent bg-accent-soft"
+                    : "border-dashed border-line bg-paper"
                 }`}
               >
                 {selectedWords[i] && (
-                  <span className="font-heading text-sm text-green-700">
+                  <span className="font-heading text-xl text-ink">
                     {selectedWords[i]}
                   </span>
                 )}
@@ -239,67 +213,61 @@ export default function SusunKalimatPage() {
           </div>
 
           {/* Feedback message */}
-          <AnimatePresence>
-            {feedback === "correct" && (
-              <motion.p
-                className="font-heading text-lg text-green-600 mt-2"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-              >
-                {"\u2705"} Hebat! {currentSentence}
-              </motion.p>
-            )}
-            {feedback === "wrong" && (
-              <motion.p
-                className="font-heading text-lg text-red-500 mt-2"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0 }}
-              >
-                {"\ud83d\udd04"} Coba lagi...
-              </motion.p>
-            )}
-          </AnimatePresence>
+          <div className="min-h-[36px] mt-3" aria-live="polite">
+            <AnimatePresence>
+              {feedback === "correct" && (
+                <motion.p
+                  className="font-heading text-xl text-good-strong inline-flex items-center gap-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="m5 12 5 5 9-10" />
+                  </svg>
+                  Hebat! {currentSentence}
+                </motion.p>
+              )}
+              {feedback === "wrong" && (
+                <motion.p
+                  className="font-heading text-xl text-ink"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  Coba lagi…
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
         </motion.div>
 
         {/* Word buttons */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-wrap justify-center gap-3 max-w-sm">
-            <AnimatePresence mode="popLayout">
-              {shuffledWords.map((word, i) => {
-                const isUsed = usedIndices.has(i);
-                return (
-                  <motion.button
-                    key={`${currentIdx}-${i}`}
-                    layout
-                    initial={{ opacity: 0, scale: 0.5 }}
-                    animate={{
-                      opacity: isUsed ? 0 : 1,
-                      scale: isUsed ? 0.5 : 1,
-                    }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className={`font-heading text-xl px-6 py-4 rounded-2xl shadow-md min-h-[56px] min-w-[80px] ${
-                      isUsed
-                        ? "pointer-events-none"
-                        : feedback === "wrong"
-                        ? "bg-red-200 text-red-700"
-                        : "bg-white text-foreground border-2 border-orange-200 hover:border-orange-400"
-                    }`}
-                    onClick={() => handleWordTap(word, i)}
-                    disabled={isUsed || locked}
-                    whileHover={!isUsed ? { scale: 1.08 } : undefined}
-                    whileTap={!isUsed ? { scale: 0.92 } : undefined}
-                  >
-                    {word}
-                  </motion.button>
-                );
-              })}
-            </AnimatePresence>
-          </div>
+        <div className="flex flex-wrap justify-center gap-3">
+          {shuffledWords.map((word, i) => {
+            const isUsed = usedIndices.has(i);
+            return (
+              <button
+                key={`${currentIdx}-${i}`}
+                type="button"
+                className={`font-heading text-2xl px-6 min-h-[72px] min-w-[96px] rounded-3xl border-2 transition-[opacity,background-color,border-color] duration-200 ${
+                  isUsed
+                    ? "opacity-0 pointer-events-none border-line bg-surface"
+                    : feedback === "wrong"
+                    ? "bg-surface text-ink border-warn"
+                    : "bg-surface text-ink border-line hover:bg-accent-soft active:bg-line"
+                }`}
+                onClick={() => handleWordTap(word, i)}
+                disabled={isUsed || locked}
+              >
+                {word}
+              </button>
+            );
+          })}
         </div>
-      </div>
-    </div>
+      </section>
+    </GameShell>
   );
 }

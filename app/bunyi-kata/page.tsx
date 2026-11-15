@@ -8,7 +8,8 @@ import { words, Word } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
 import { speak } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause, playPop } from "@/lib/sounds";
-import StarCounter from "@/components/ui/StarCounter";
+import GameShell from "@/components/ui/GameShell";
+import BigButton from "@/components/ui/BigButton";
 import GameTutorial from "@/components/GameTutorial";
 
 const ConfettiEffect = dynamic(() => import("@/components/ui/ConfettiEffect"), { ssr: false });
@@ -82,7 +83,7 @@ export default function BunyiKataPage() {
   const [finished, setFinished] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  useEffect(() => {
+  const startSession = () => {
     const qs: Question[] = [];
     for (let i = 0; i < SESSION_SIZE; i++) {
       let q = generateQuestion(words);
@@ -93,8 +94,16 @@ export default function BunyiKataPage() {
       }
       if (q) qs.push(q);
     }
+
     setQuestions(qs);
-  }, []);
+    setCurrentIdx(0);
+    setSelectedIdx(null);
+    setScore(0);
+    setFinished(false);
+  };
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(startSession, []);
 
   const currentQuestion = questions[currentIdx];
 
@@ -123,48 +132,51 @@ export default function BunyiKataPage() {
   };
 
   const handleRestart = () => {
-    window.location.reload();
+    playPop();
+    startSession();
   };
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen bg-teal-50 flex items-center justify-center">
-        <p className="font-heading text-lg text-foreground/60">Memuat...</p>
-      </div>
+      <GameShell title="Bunyi Kata">
+        <p className="font-heading text-lg text-ink-muted text-center py-12">Memuat…</p>
+      </GameShell>
     );
   }
 
   if (finished) {
     const pct = Math.round((score / questions.length) * 100);
     return (
-      <div className="min-h-screen bg-teal-50 flex flex-col items-center justify-center px-6 text-center">
-        <span className="text-7xl mb-6" aria-hidden="true">{"\ud83c\udfaf"}</span>
-        <h1 className="font-heading text-3xl font-bold text-foreground mb-2">
-          Skor {score}/{questions.length}
-        </h1>
-        <p className="font-body text-lg text-foreground/70 mb-8">
-          Akurasi {pct}%!
-        </p>
-        <div className="flex flex-col gap-3">
-          <motion.button
-            onClick={handleRestart}
-            className="bg-teal-500 text-white font-heading text-lg px-8 py-3 rounded-full shadow-lg"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {"\ud83d\udd04"} Main Lagi
-          </motion.button>
-          <Link href="/">
-            <motion.button
-              className="bg-white text-foreground/70 font-heading text-base px-8 py-2.5 rounded-full shadow-md border-2 border-gray-200"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+      <GameShell title="Bunyi Kata">
+        <div className="bg-surface rounded-3xl border border-line p-8 flex flex-col items-center text-center">
+          <h2 className="font-heading text-[40px] leading-tight font-bold text-ink mb-2">
+            Skor {score}/{questions.length}
+          </h2>
+          <p className="font-body text-xl text-ink-muted mb-8">
+            Akurasi {pct}%!
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <BigButton onClick={handleRestart}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                <path d="M3 3v5h5" />
+              </svg>
+              Main Lagi
+            </BigButton>
+            <Link
+              href="/"
+              onClick={playPop}
+              className="inline-flex items-center justify-center gap-3 min-h-[72px] px-6 rounded-3xl font-heading text-lg sm:text-xl font-semibold bg-surface text-ink border-2 border-line hover:bg-accent-soft active:bg-line transition-colors"
             >
-              {"\ud83c\udfe0"} Pulang
-            </motion.button>
-          </Link>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 10.5 12 3l9 7.5" />
+                <path d="M5 9.5V21h14V9.5" />
+              </svg>
+              Pulang
+            </Link>
+          </div>
         </div>
-      </div>
+      </GameShell>
     );
   }
 
@@ -172,8 +184,9 @@ export default function BunyiKataPage() {
   const progress = ((currentIdx + 1) / questions.length) * 100;
 
   return (
-    <main id="main-content" className="min-h-screen bg-teal-50 flex flex-col">
-      <h1 className="sr-only">Bunyi Kata - Latihan phonological awareness</h1>
+    <GameShell title="Bunyi Kata">
+      <div id="main-content">
+      <h2 className="sr-only">Bunyi Kata - Latihan phonological awareness</h2>
       <ConfettiEffect show={showConfetti} />
 
       <GameTutorial
@@ -184,71 +197,60 @@ export default function BunyiKataPage() {
         ]}
       />
 
-      {/* Header */}
-      <div className="sticky top-0 z-40 bg-teal-50/90 backdrop-blur-sm px-4 pt-4 pb-2">
-        <div className="flex items-center justify-between mb-3">
-          <Link href="/">
-            <motion.button
-              className="w-12 h-12 min-w-[48px] min-h-[48px] bg-white rounded-full flex items-center justify-center shadow-md text-2xl"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              aria-label="Kembali ke beranda"
-            >
-              {"\ud83c\udfe0"}
-            </motion.button>
-          </Link>
-          <div className="flex items-center gap-2">
-            <span className="bg-white rounded-full px-3 py-1 shadow-sm text-sm font-heading font-bold text-teal-700">
-              {currentIdx + 1} / {questions.length}
-            </span>
-            <StarCounter />
-          </div>
-        </div>
-        <div className="w-full bg-white/80 rounded-full h-2.5 overflow-hidden shadow-inner">
+      {/* Progress */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex-1 bg-line rounded-full h-2.5 overflow-hidden">
           <motion.div
-            className="bg-teal-400 h-full rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+            className="bg-accent-strong h-full rounded-full origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progress / 100 }}
+            transition={{ duration: 0.3 }}
           />
         </div>
+        <span className="font-heading text-base font-bold text-ink-muted">
+          {currentIdx + 1} / {questions.length}
+        </span>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
+      <div className="flex flex-col items-center">
         {/* Target word */}
         <motion.div
           key={currentIdx}
-          className="text-center mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          className="w-full bg-surface rounded-3xl border border-line p-6 text-center mb-5"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.25 }}
         >
-          <p className="font-body text-sm text-foreground/60 mb-3">
+          <p className="font-body text-lg text-ink-muted mb-3">
             Cari kata yang dimulai dengan bunyi yang sama:
           </p>
-          <div className="flex flex-col items-center gap-3">
-            <motion.button
-              onClick={() => {
-                playPop();
-                speak(currentQuestion.target.word.word, { rate: 0.6 });
-              }}
-              className="flex flex-col items-center gap-2"
-              aria-label={`Dengarkan kata ${currentQuestion.target.word.word}`}
-            >
-              <span className="text-7xl" aria-hidden="true">{currentQuestion.target.word.emoji}</span>
-              <span className="font-heading text-3xl font-bold text-foreground">
-                {currentQuestion.target.word.word}
-              </span>
-              <span className="font-body text-xs text-foreground/50">
-                Suku kata pertama: <strong>{currentQuestion.target.firstSyllable}</strong>
-              </span>
-              <span className="text-sm text-foreground/40 mt-1">{"\ud83d\udd0a"} ketuk untuk dengar</span>
-            </motion.button>
-          </div>
+          <button
+            onClick={() => {
+              playPop();
+              speak(currentQuestion.target.word.word, { rate: 0.6 });
+            }}
+            className="inline-flex flex-col items-center gap-2 rounded-3xl px-6 py-3 hover:bg-accent-soft transition-colors"
+            aria-label={`Dengarkan kata ${currentQuestion.target.word.word}`}
+          >
+            <span className="text-7xl leading-none" aria-hidden="true">{currentQuestion.target.word.emoji}</span>
+            <span className="font-heading text-[40px] leading-tight font-bold text-ink">
+              {currentQuestion.target.word.word}
+            </span>
+            <span className="font-body text-lg text-ink-muted">
+              Suku kata pertama: <strong className="text-accent-strong">{currentQuestion.target.firstSyllable}</strong>
+            </span>
+            <span className="inline-flex items-center gap-2 font-heading text-lg text-accent-strong">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M11 5 6 9H3v6h3l5 4V5z" />
+                <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+              </svg>
+              Ketuk untuk dengar
+            </span>
+          </button>
         </motion.div>
 
         {/* Options */}
-        <div className="grid grid-cols-3 gap-3 max-w-2xl w-full">
+        <div className="grid grid-cols-3 gap-3 w-full">
           {currentQuestion.options.map((opt, idx) => {
             const isSelected = selectedIdx === idx;
             const isCorrect = idx === currentQuestion.correctIndex;
@@ -260,29 +262,29 @@ export default function BunyiKataPage() {
                 key={`${currentIdx}-${idx}`}
                 onClick={() => handleSelect(idx)}
                 disabled={selectedIdx !== null}
-                className={`flex flex-col items-center gap-2 p-4 rounded-2xl shadow-md border-2 min-h-[120px] ${
+                className={`flex flex-col items-center justify-center gap-2 p-3 rounded-3xl border-2 min-h-[132px] transition-colors ${
                   showCorrect
-                    ? "bg-green-100 border-green-400"
+                    ? "bg-good-strong border-good-strong text-on-accent"
                     : showWrong
-                    ? "bg-red-100 border-red-400"
-                    : "bg-white border-gray-200 hover:border-teal-300"
+                    ? "bg-surface border-warn text-ink"
+                    : "bg-surface border-line text-ink hover:bg-accent-soft"
                 }`}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 + idx * 0.08 }}
-                whileHover={selectedIdx === null ? { scale: 1.05 } : undefined}
-                whileTap={selectedIdx === null ? { scale: 0.95 } : undefined}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: idx * 0.05 }}
                 aria-label={`Pilih ${opt.word.word}`}
               >
-                <span className="text-5xl" aria-hidden="true">{opt.word.emoji}</span>
-                <span className="font-heading text-base sm:text-lg text-foreground text-center leading-tight">
+                <span className="text-5xl leading-none" aria-hidden="true">{opt.word.emoji}</span>
+                <span className="font-heading text-lg sm:text-xl text-center leading-tight">
                   {opt.word.word}
                 </span>
                 {showCorrect && (
-                  <span className="text-green-600 text-xl" aria-hidden="true">{"\u2705"}</span>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12.5l4.5 4.5L19 7.5" />
+                  </svg>
                 )}
-                {showWrong && (
-                  <span className="text-red-500 text-xl" aria-hidden="true">{"\u274c"}</span>
+                {showCorrect && selectedIdx !== currentQuestion.correctIndex && (
+                  <span className="font-heading text-base">Jawabannya ini</span>
                 )}
               </motion.button>
             );
@@ -290,12 +292,11 @@ export default function BunyiKataPage() {
         </div>
 
         {/* Score */}
-        <div className="mt-6 flex items-center gap-1">
-          {Array.from({ length: score }).map((_, i) => (
-            <span key={i} className="text-xl" aria-hidden="true">{"\u2b50"}</span>
-          ))}
-        </div>
+        {score > 0 && (
+          <p className="mt-5 font-heading text-lg text-ink-muted">Benar: {score}</p>
+        )}
       </div>
-    </main>
+      </div>
+    </GameShell>
   );
 }

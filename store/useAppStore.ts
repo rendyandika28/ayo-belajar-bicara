@@ -1,5 +1,6 @@
 "use client";
 
+import { localDateKey, daysBetween } from "@/lib/date";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Word } from "@/data/words";
@@ -47,8 +48,23 @@ interface AppState {
   resetProgress: () => void;
 }
 
+/** v0 stored UTC date keys; v1 stores local ones. Exact instant is lost, so map UTC today/yesterday to local today/yesterday. */
+export function migrateAppState(persisted: unknown, version: number) {
+  const state = persisted as { lastActiveDate?: string };
+  if (version < 1 && state?.lastActiveDate) {
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const utcKey = (d: Date) => d.toISOString().slice(0, 10);
+    if (state.lastActiveDate === utcKey(now)) state.lastActiveDate = localDateKey(now);
+    else if (state.lastActiveDate === utcKey(new Date(now.getTime() - 86400000)))
+      state.lastActiveDate = localDateKey(yesterday);
+  }
+  return state as AppState;
+}
+
 function getToday(): string {
-  return new Date().toISOString().split("T")[0];
+  return localDateKey();
 }
 
 const initialState = {
@@ -130,17 +146,13 @@ export const useAppStore = create<AppState>()(
 
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split("T")[0];
+        const yesterdayStr = localDateKey(yesterday);
 
         const newStreak =
           state.lastActiveDate === yesterdayStr ? state.dailyStreak + 1 : 1;
 
         const daysDiff = state.lastActiveDate
-          ? Math.floor(
-              (new Date(today).getTime() -
-                new Date(state.lastActiveDate).getTime()) /
-                86400000
-            )
+          ? daysBetween(state.lastActiveDate, today)
           : 7;
         const newWeekly = [...state.weeklyMinutes];
         for (let i = 0; i < Math.min(daysDiff, 7); i++) {
@@ -218,6 +230,6 @@ export const useAppStore = create<AppState>()(
         set({ ...initialState });
       },
     }),
-    { name: "speechTherapyData" }
+    { name: "speechTherapyData", version: 1, migrate: migrateAppState }
   )
 );

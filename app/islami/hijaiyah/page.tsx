@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { speakIslamic } from "@/lib/speech";
 import { playPop, playCorrect, playWrong } from "@/lib/sounds";
 import { hijaiyahLetters } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
-import StarCounter from "@/components/ui/StarCounter";
-import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameShell from "@/components/ui/GameShell";
+import BigButton from "@/components/ui/BigButton";
+import Icon from "@/components/ui/Icon";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 type QuizQuestion = {
@@ -53,6 +53,7 @@ export default function HijaiyahPage() {
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
   const [quizIndex, setQuizIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [wrongPick, setWrongPick] = useState<string | null>(null); // first miss; one retry allowed
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [quizScore, setQuizScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
@@ -94,15 +95,20 @@ export default function HijaiyahPage() {
   }, [currentLetter]);
 
   // Swipe support
-  const touchStartX = useRef(0);
+  const touchStart = useRef({ x: 0, y: 0 });
+  const quizTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (quizTimerRef.current) clearTimeout(quizTimerRef.current); }, []);
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
+    touchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   }, []);
   const handleTouchEnd = useCallback(
     (e: React.TouchEvent) => {
-      const diff = e.changedTouches[0].clientX - touchStartX.current;
-      if (diff > 60) goPrev();
-      else if (diff < -60) goNext();
+      const dx = e.changedTouches[0].clientX - touchStart.current.x;
+      const dy = e.changedTouches[0].clientY - touchStart.current.y;
+      // Clearly horizontal only, so a diagonal scroll never changes the letter.
+      if (Math.abs(dx) <= 60 || Math.abs(dx) <= 1.5 * Math.abs(dy)) return;
+      if (dx > 0) goPrev();
+      else goNext();
     },
     [goNext, goPrev]
   );
@@ -110,28 +116,27 @@ export default function HijaiyahPage() {
   // Slide variants
   const slideVariants = {
     enter: (dir: number) => ({
-      x: dir > 0 ? 300 : -300,
+      x: dir > 0 ? 40 : -40,
       opacity: 0,
-      scale: 0.9,
     }),
     center: {
       x: 0,
       opacity: 1,
-      scale: 1,
     },
     exit: (dir: number) => ({
-      x: dir > 0 ? -300 : 300,
+      x: dir > 0 ? -40 : 40,
       opacity: 0,
-      scale: 0.9,
     }),
   };
 
   // Quiz functions
   const startQuiz = useCallback(() => {
+    if (quizTimerRef.current) { clearTimeout(quizTimerRef.current); quizTimerRef.current = null; }
     const questions = generateQuiz(10);
     setQuizQuestions(questions);
     setQuizIndex(0);
     setSelectedAnswer(null);
+    setWrongPick(null);
     setIsCorrect(null);
     setQuizScore(0);
     setQuizFinished(false);
@@ -140,10 +145,17 @@ export default function HijaiyahPage() {
 
   const handleQuizAnswer = useCallback(
     (letterId: string) => {
-      if (selectedAnswer !== null) return; // Already answered
+      if (selectedAnswer !== null || letterId === wrongPick) return; // Already answered
 
       const currentQuestion = quizQuestions[quizIndex];
       const correct = letterId === currentQuestion.correctLetter.id;
+
+      if (!correct && wrongPick === null) {
+        // First miss: gentle hint, child tries again.
+        playWrong();
+        setWrongPick(letterId);
+        return;
+      }
 
       setSelectedAnswer(letterId);
       setIsCorrect(correct);
@@ -159,20 +171,23 @@ export default function HijaiyahPage() {
       }
 
       // Move to next question after delay
-      setTimeout(() => {
+      quizTimerRef.current = setTimeout(() => {
+        quizTimerRef.current = null;
         if (quizIndex < quizQuestions.length - 1) {
           setQuizIndex((prev) => prev + 1);
           setSelectedAnswer(null);
+          setWrongPick(null);
           setIsCorrect(null);
         } else {
           setQuizFinished(true);
         }
       }, 1500);
     },
-    [selectedAnswer, quizQuestions, quizIndex, addStar]
+    [selectedAnswer, wrongPick, quizQuestions, quizIndex, addStar]
   );
 
   const exitQuiz = useCallback(() => {
+    if (quizTimerRef.current) { clearTimeout(quizTimerRef.current); quizTimerRef.current = null; }
     setIsQuizMode(false);
     setQuizFinished(false);
   }, []);
@@ -180,70 +195,36 @@ export default function HijaiyahPage() {
   // Quiz finished screen
   if (isQuizMode && quizFinished) {
     return (
-      <motion.div
-        className="islamic-pattern min-h-screen flex flex-col px-4 py-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <motion.button
-            onClick={exitQuiz}
-            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            aria-label="Kembali"
-          >
-            {"\u2b05\ufe0f"}
-          </motion.button>
-          <StarCounter />
-        </div>
-
-        <div className="flex-1 flex flex-col items-center justify-center">
-          <motion.div
-            className="bg-white rounded-3xl shadow-xl p-8 text-center max-w-sm w-full"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          >
-            <span className="text-6xl block mb-4">
-              {quizScore >= 8 ? "\ud83c\udfc6" : quizScore >= 5 ? "\ud83c\udf1f" : "\ud83d\udcaa"}
-            </span>
-            <h2 className="font-heading text-2xl font-bold text-emerald-800 mb-2">
-              Quiz Selesai!
-            </h2>
-            <p className="font-body text-lg text-foreground/70 mb-1">
-              Skor kamu:
-            </p>
-            <p className="font-heading text-5xl font-bold text-emerald-600 mb-4">
-              {quizScore}/10
-            </p>
-            <p className="font-body text-sm text-foreground/60 mb-6">
-              {quizScore >= 8
-                ? "Masya Allah, hebat sekali!"
-                : quizScore >= 5
-                ? "Bagus! Terus belajar ya!"
-                : "Ayo coba lagi, pasti bisa!"}
-            </p>
-
-            <div className="flex flex-col gap-3">
-              <motion.button
-                onClick={startQuiz}
-                className="w-full bg-emerald-500 text-white font-heading text-lg py-3 rounded-2xl shadow-md min-h-[52px]"
-                whileTap={{ scale: 0.95 }}
-              >
-                {"\ud83d\udd01"} Coba Lagi
-              </motion.button>
-              <motion.button
-                onClick={exitQuiz}
-                className="w-full bg-white text-emerald-700 font-heading text-lg py-3 rounded-2xl shadow-md border-2 border-emerald-200 min-h-[52px]"
-                whileTap={{ scale: 0.95 }}
-              >
-                {"\ud83d\udcd6"} Belajar Lagi
-              </motion.button>
-            </div>
-          </motion.div>
-        </div>
-      </motion.div>
+      <GameShell title="Quiz Hijaiyah" onBack={exitQuiz} backLabel="Kembali ke belajar huruf">
+        <motion.div
+          className="bg-surface rounded-3xl border border-line p-8 text-center max-w-sm mx-auto flex flex-col items-center gap-3"
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.25 }}
+        >
+          <span className="w-20 h-20 rounded-full bg-good-strong text-on-accent flex items-center justify-center">
+            <Icon name="star" size={40} />
+          </span>
+          <h2 className="font-heading text-2xl font-bold text-ink">Quiz Selesai!</h2>
+          <p className="font-body text-lg text-ink-muted">Skor kamu:</p>
+          <p className="font-heading text-5xl font-bold text-good-strong">{quizScore}/10</p>
+          <p className="font-body text-lg text-ink">
+            {quizScore >= 8
+              ? "Masya Allah, hebat sekali!"
+              : quizScore >= 5
+              ? "Bagus! Terus belajar ya!"
+              : "Ayo coba lagi, pasti bisa!"}
+          </p>
+          <div className="flex flex-col gap-3 w-full mt-2">
+            <BigButton onClick={startQuiz} className="w-full">
+              <Icon name="retry" /> Coba Lagi
+            </BigButton>
+            <BigButton tone="quiet" onClick={exitQuiz} className="w-full">
+              <Icon name="book" /> Belajar Lagi
+            </BigButton>
+          </div>
+        </motion.div>
+      </GameShell>
     );
   }
 
@@ -252,182 +233,102 @@ export default function HijaiyahPage() {
     const currentQuestion = quizQuestions[quizIndex];
 
     return (
-      <motion.div
-        className="islamic-pattern min-h-screen flex flex-col px-4 py-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
+      <GameShell title="Quiz Hijaiyah" onBack={exitQuiz} backLabel="Keluar dari kuis">
         <ConfettiEffect show={showConfetti} />
 
-        {/* Top bar */}
-        <div className="relative flex items-center justify-between mb-4">
-          <motion.button
-            onClick={exitQuiz}
-            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl z-10"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            aria-label="Keluar quiz"
-          >
-            {"\u2b05\ufe0f"}
-          </motion.button>
-
-          <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-xl font-bold text-emerald-800 whitespace-nowrap pointer-events-none">
-            Quiz Hijaiyah
-          </h1>
-
-          <div className="z-10">
-            <StarCounter />
+        {/* ponytail: sized to fit 360x640 without scrolling (584px visible - 132px header = 452px; content ~410px) */}
+        <div className="max-w-md mx-auto w-full flex flex-col gap-3">
+          {/* Progress */}
+          <div>
+            <div className="flex items-center justify-between mb-1 font-body text-base text-ink-muted">
+              <span>Soal {quizIndex + 1}/10</span>
+              <span>Skor: {quizScore}</span>
+            </div>
+            <div className="w-full h-2 bg-line rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-good-strong rounded-full origin-left"
+                initial={false}
+                animate={{ scaleX: (quizIndex + 1) / 10 }}
+                transition={{ duration: 0.3 }}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Progress */}
-        <div className="mb-4 max-w-md mx-auto w-full">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-body text-sm text-emerald-700">
-              Soal {quizIndex + 1}/10
-            </span>
-            <span className="font-body text-sm text-emerald-700">
-              Skor: {quizScore}
-            </span>
-          </div>
-          <div className="w-full h-2 bg-emerald-200 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-emerald-500 rounded-full"
-              animate={{ width: `${((quizIndex + 1) / 10) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
-          </div>
-        </div>
-
-        {/* Quiz content */}
-        <div className="flex-1 flex flex-col items-center justify-center max-w-md mx-auto w-full">
           {/* Question */}
-          <motion.div
-            className="bg-white rounded-3xl shadow-xl p-6 text-center mb-6 w-full"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-          >
-            <p className="font-body text-sm text-foreground/60 mb-2">
-              Mana huruf yang bernama:
-            </p>
-            <p className="font-heading text-3xl font-bold text-emerald-800 mb-2">
-              {currentQuestion.correctLetter.name}
-            </p>
-            <motion.button
-              onClick={() =>
-                speakIslamic(currentQuestion.correctLetter.name)
-              }
-              className="bg-emerald-100 text-emerald-700 font-body text-sm px-4 py-2 rounded-full min-h-[40px]"
-              whileTap={{ scale: 0.95 }}
-            >
-              {"\ud83d\udd0a"} Dengar
-            </motion.button>
-          </motion.div>
+          <div className="bg-surface rounded-3xl border border-line p-3 text-center flex flex-col items-center gap-1">
+            <p className="font-body text-lg text-ink-muted">Mana huruf yang bernama:</p>
+            <div className="flex items-center justify-center gap-3">
+              <p className="font-heading text-3xl font-bold text-ink">{currentQuestion.correctLetter.name}</p>
+              <button
+                type="button"
+                onClick={() => speakIslamic(currentQuestion.correctLetter.name)}
+                className="inline-flex items-center gap-2 min-h-14 px-4 rounded-full bg-surface border-2 border-line font-heading text-lg text-ink transition-colors hover:bg-accent-soft active:bg-line"
+              >
+                <Icon name="speaker" /> Dengar
+              </button>
+            </div>
+          </div>
 
           {/* 2x2 answer grid */}
           <AnimatePresence mode="wait">
             <motion.div
               key={quizIndex}
-              className="grid grid-cols-2 gap-4 w-full"
-              initial={{ opacity: 0, y: 20 }}
+              className="grid grid-cols-2 gap-3 w-full"
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
             >
               {currentQuestion.options.map((option) => {
                 const isSelected = selectedAnswer === option.id;
                 const isCorrectOption =
                   option.id === currentQuestion.correctLetter.id;
                 const showResult = selectedAnswer !== null;
+                const missed = option.id === wrongPick || (showResult && isSelected && !isCorrect);
 
-                let borderColor = "border-emerald-200";
-                let bgColor = "bg-white";
-
-                if (showResult) {
-                  if (isCorrectOption) {
-                    borderColor = "border-green-500";
-                    bgColor = "bg-green-50";
-                  } else if (isSelected && !isCorrect) {
-                    borderColor = "border-red-400";
-                    bgColor = "bg-red-50";
-                  }
-                }
+                const border = showResult && isCorrectOption
+                  ? "border-good-strong"
+                  : missed
+                  ? "border-warn"
+                  : "border-line";
 
                 return (
                   <motion.button
                     key={option.id}
                     onClick={() => handleQuizAnswer(option.id)}
-                    className={`${bgColor} ${borderColor} border-3 rounded-2xl p-4 flex flex-col items-center justify-center shadow-lg min-h-[120px] ${
-                      showResult && isSelected && !isCorrect
-                        ? "animate-shake"
-                        : ""
-                    }`}
-                    style={{ borderWidth: 3 }}
-                    whileTap={selectedAnswer === null ? { scale: 0.95 } : {}}
-                    animate={
-                      showResult && isCorrectOption
-                        ? { scale: [1, 1.1, 1] }
-                        : {}
-                    }
-                    transition={{ duration: 0.3 }}
-                    disabled={selectedAnswer !== null}
+                    className={`relative bg-surface ${border} border-4 rounded-3xl p-2 flex flex-col items-center justify-center min-h-[112px] transition-colors`}
+                    whileTap={selectedAnswer === null ? { scale: 0.96 } : {}}
+                    disabled={selectedAnswer !== null || option.id === wrongPick}
                   >
-                    <span
-                      className="text-[52px] leading-normal"
-                      style={{ fontFamily: "var(--font-amiri)" }}
-                      dir="rtl" lang="ar"
-                    >
+                    <span className="font-arabic text-[52px] leading-tight text-ink" dir="rtl" lang="ar">
                       {option.letter}
                     </span>
+                    {showResult && isCorrectOption && (
+                      <span className="absolute top-2 right-2 w-9 h-9 rounded-full bg-good-strong text-on-accent flex items-center justify-center">
+                        <Icon name="check" />
+                      </span>
+                    )}
+                    {!showResult && option.id === wrongPick && <span className="font-heading text-lg text-ink">Coba lagi</span>}
+                    {showResult && isCorrectOption && !isCorrect && <span className="font-heading text-lg text-ink">Jawabannya ini</span>}
                   </motion.button>
                 );
               })}
             </motion.div>
           </AnimatePresence>
         </div>
-      </motion.div>
+      </GameShell>
     );
   }
 
   // Learning mode
   return (
-    <motion.div
-      className="islamic-pattern min-h-screen flex flex-col px-4 py-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      {/* Top bar */}
-      <div className="relative flex items-center justify-between mb-4">
-        <Link href="/islami" className="z-10">
-          <motion.button
-            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            aria-label="Kembali ke menu Islami"
-          >
-            {"\u2b05\ufe0f"}
-          </motion.button>
-        </Link>
-
-        <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-xl sm:text-2xl font-bold text-emerald-800 whitespace-nowrap pointer-events-none">
-          Huruf Hijaiyah
-        </h1>
-
-        <div className="flex items-center gap-2 z-10">
-          <FocusModeButton />
-          <StarCounter />
-        </div>
-      </div>
-
-      {/* Card counter */}
-      <p className="text-center font-body text-sm text-emerald-700/60 mb-2">
+    <GameShell title="Huruf Hijaiyah" backHref="/islami" backLabel="Kembali ke menu Islami">
+      <p className="text-center font-body text-base text-ink-muted mb-2">
         {currentIndex + 1} / {hijaiyahLetters.length}
       </p>
 
-      {/* Flashcard area */}
       <div
-        className="flex-1 flex flex-col items-center justify-center"
+        className="flex flex-col items-center"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -442,117 +343,74 @@ export default function HijaiyahPage() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{
-                  type: "tween",
-                  duration: 0.25,
-                }}
+                transition={{ type: "tween", duration: 0.25 }}
                 onClick={handleCardTap}
-                className="absolute inset-0 bg-white rounded-3xl shadow-xl border-2 border-emerald-200 p-6 flex flex-col items-center justify-center cursor-pointer select-none"
+                className="absolute inset-0 bg-surface rounded-3xl border border-line p-6 flex flex-col items-center justify-center cursor-pointer select-none"
               >
-                {/* Arabic letter */}
-                <motion.span
-                  className="leading-normal mb-4 mt-2"
-                  style={{
-                    fontFamily: "var(--font-amiri)",
-                    fontSize: "clamp(60px, 15vw, 100px)",
-                  }}
+                <span
+                  className="font-arabic leading-normal mb-4 mt-2 text-ink"
+                  style={{ fontSize: "clamp(72px, 18vw, 112px)" }}
                   dir="rtl" lang="ar"
-                  whileTap={{ scale: 1.15 }}
-                  transition={{ type: "spring", stiffness: 400 }}
                 >
                   {currentLetter.letter}
-                </motion.span>
-
-                {/* Letter name + emoji */}
+                </span>
                 <div className="flex items-center gap-2 mb-1">
-                  <h2 className="font-heading text-2xl font-bold text-emerald-800">
-                    {currentLetter.name}
-                  </h2>
-                  <span className="text-lg">{currentLetter.emoji}</span>
+                  <h2 className="font-heading text-3xl font-bold text-ink">{currentLetter.name}</h2>
+                  <span className="text-2xl">{currentLetter.emoji}</span>
                 </div>
-
-                {/* Transliteration */}
-                <p className="text-lg text-gray-600 font-body">
-                  ({currentLetter.transliteration})
-                </p>
-
-                {/* Tap hint */}
-                <p className="mt-4 text-xs text-foreground/40 font-body">
-                  {"\ud83d\udd0a"} Ketuk untuk dengar
+                <p className="text-xl text-ink-muted font-body">({currentLetter.transliteration})</p>
+                <p className="mt-4 flex items-center gap-2 text-base text-ink-muted font-body">
+                  <Icon name="speaker" size={20} /> Ketuk untuk dengar
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Progress dots */}
-        <div className="flex flex-wrap items-center justify-center gap-1.5 mt-4 max-w-sm px-2">
-          {hijaiyahLetters.map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-full transition-all ${
-                i === currentIndex
-                  ? "w-3 h-3 bg-emerald-500"
-                  : "w-2 h-2 bg-emerald-300/50"
-              }`}
-            />
-          ))}
+        {/* Navigation */}
+        <div className="grid grid-cols-3 gap-3 w-full max-w-sm mt-5">
+          <BigButton tone="quiet" onClick={goPrev} disabled={currentIndex === 0} aria-label="Sebelumnya">
+            <Icon name="prev" size={32} />
+          </BigButton>
+          <BigButton onClick={handleCardTap} aria-label="Ucapkan huruf">
+            <Icon name="speaker" size={32} />
+          </BigButton>
+          <BigButton tone="quiet" onClick={goNext} disabled={currentIndex >= hijaiyahLetters.length - 1} aria-label="Selanjutnya">
+            <Icon name="next" size={32} />
+          </BigButton>
         </div>
 
-        {/* Navigation arrows */}
-        <div className="flex items-center justify-center gap-6 mt-6">
-          <motion.button
-            onClick={goPrev}
-            disabled={currentIndex === 0}
-            className={`w-16 h-16 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-2 transition-colors ${
-              currentIndex === 0
-                ? "bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed"
-                : "bg-white border-emerald-200 text-emerald-700 active:bg-emerald-50"
-            }`}
-            whileTap={currentIndex > 0 ? { scale: 0.9 } : {}}
-            aria-label="Sebelumnya"
-          >
-            {"\u25c0\ufe0f"}
-          </motion.button>
-
-          <motion.button
-            onClick={handleCardTap}
-            className="w-16 h-16 flex items-center justify-center rounded-full bg-emerald-200 border-2 border-emerald-300 text-2xl shadow-lg active:bg-emerald-300 transition-colors"
-            whileTap={{ scale: 0.9 }}
-            aria-label="Ucapkan huruf"
-          >
-            {"\ud83d\udd0a"}
-          </motion.button>
-
-          <motion.button
-            onClick={goNext}
-            disabled={currentIndex >= hijaiyahLetters.length - 1}
-            className={`w-16 h-16 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-2 transition-colors ${
-              currentIndex >= hijaiyahLetters.length - 1
-                ? "bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed"
-                : "bg-white border-emerald-200 text-emerald-700 active:bg-emerald-50"
-            }`}
-            whileTap={
-              currentIndex < hijaiyahLetters.length - 1
-                ? { scale: 0.9 }
-                : {}
-            }
-            aria-label="Selanjutnya"
-          >
-            {"\u25b6\ufe0f"}
-          </motion.button>
-        </div>
-
-        {/* Quiz button */}
-        <motion.button
-          onClick={startQuiz}
-          className="mt-6 bg-amber-400 text-amber-900 font-heading text-lg px-6 py-3 rounded-2xl shadow-lg border-2 border-amber-500 min-h-[52px]"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {"\ud83c\udfaf"} Quiz
-        </motion.button>
+        <BigButton tone="good" onClick={startQuiz} className="w-full max-w-sm mt-3">
+          <Icon name="target" /> Quiz
+        </BigButton>
       </div>
-    </motion.div>
+
+        {/* Letter grid: replaces progress dots; tap jumps to that letter */}
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 w-full max-w-3xl mx-auto mt-6" dir="rtl">
+          {hijaiyahLetters.map((l, i) => (
+            <button
+              key={l.id}
+              type="button"
+              onClick={() => {
+                setDirection(i > currentIndex ? 1 : -1);
+                setCurrentIndex(i);
+                playPop();
+              }}
+              aria-label={l.name}
+              aria-current={i === currentIndex ? "true" : undefined}
+              className={`min-h-[72px] rounded-2xl border-2 flex items-center justify-center font-arabic text-5xl leading-none transition-colors ${
+                i === currentIndex
+                  ? "bg-accent-soft border-accent-strong text-ink"
+                  : hijaiyahLearned.includes(l.id)
+                  ? "bg-surface border-good-strong text-ink"
+                  : "bg-surface border-line text-ink"
+              }`}
+              lang="ar"
+            >
+              {l.letter}
+            </button>
+          ))}
+      </div>
+    </GameShell>
   );
 }

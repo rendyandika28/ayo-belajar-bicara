@@ -3,13 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAppStore } from "@/store/useAppStore";
 
-const COLORS = [
-  "bg-pink-400",
-  "bg-yellow-400",
-  "bg-green-400",
-  "bg-blue-400",
-  "bg-purple-400",
-];
+const COLORS = ["bg-accent", "bg-good", "bg-warn"];
 
 interface ConfettiEffectProps {
   show: boolean;
@@ -31,31 +25,31 @@ export default function ConfettiEffect({ show }: ConfettiEffectProps) {
 
   const pieces = useMemo(
     () =>
-      Array.from({ length: calmMode ? 6 : 15 }, (_, i) => ({
+      Array.from({ length: calmMode ? 4 : 10 }, (_, i) => ({
         id: i,
         color: COLORS[i % COLORS.length],
-        left: (i * 12 + 5) % 100,
-        delay: (i * 0.12).toFixed(2),
-        size: calmMode ? 10 + (i % 3) * 4 : 6 + (i % 4) * 2,
+        left: (i * 19 + 7) % 100,
+        delay: (i * 0.1).toFixed(2),
+        size: 6 + (i % 3) * 2,
       })),
     [calmMode]
   );
 
   if (!visible) return null;
 
+  // Calm mode: a few still dots, no motion.
   if (calmMode) {
     return (
-      <div className="fixed inset-0 pointer-events-none z-[100] flex items-center justify-center">
+      <div className="fixed inset-0 pointer-events-none z-[100]" aria-hidden="true">
         {pieces.map((piece) => (
           <div
             key={piece.id}
-            className={`absolute rounded-full ${piece.color} opacity-70`}
+            className={`absolute rounded-full ${piece.color} opacity-60`}
             style={{
               left: `${piece.left}%`,
-              top: `${20 + (piece.id * 8) % 60}%`,
+              top: `${20 + ((piece.id * 15) % 50)}%`,
               width: `${piece.size}px`,
               height: `${piece.size}px`,
-              animation: `star-bounce 1.5s ease-in-out ${piece.delay}s infinite`,
             }}
           />
         ))}
@@ -64,11 +58,11 @@ export default function ConfettiEffect({ show }: ConfettiEffectProps) {
   }
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden">
+    <div className="fixed inset-0 pointer-events-none z-[100] overflow-hidden" aria-hidden="true">
       {pieces.map((piece) => (
         <div
           key={piece.id}
-          className={`confetti-piece absolute rounded-sm ${piece.color}`}
+          className={`confetti-piece absolute rounded-sm opacity-80 ${piece.color}`}
           style={{
             left: `${piece.left}%`,
             top: "-10px",

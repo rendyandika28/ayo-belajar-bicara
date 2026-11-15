@@ -7,8 +7,9 @@ import { asmaulHusna } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
 import { speak } from "@/lib/speech";
 import { playPop, playCelebration } from "@/lib/sounds";
-import StarCounter from "@/components/ui/StarCounter";
-import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameShell from "@/components/ui/GameShell";
+import BigButton from "@/components/ui/BigButton";
+import Icon from "@/components/ui/Icon";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 export default function AsmaulHusnaPage() {
@@ -74,69 +75,38 @@ export default function AsmaulHusnaPage() {
 
   const slideVariants = {
     enter: (dir: number) => ({
-      x: dir > 0 ? 300 : -300,
+      x: dir > 0 ? 40 : -40,
       opacity: 0,
-      scale: 0.9,
     }),
     center: {
       x: 0,
       opacity: 1,
-      scale: 1,
     },
     exit: (dir: number) => ({
-      x: dir > 0 ? -300 : 300,
+      x: dir > 0 ? -40 : 40,
       opacity: 0,
-      scale: 0.9,
     }),
   };
 
   return (
-    <motion.div
-      className="islamic-pattern min-h-screen flex flex-col px-4 py-4 pb-12"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <GameShell title="Asmaul Husna" backHref="/islami" backLabel="Kembali ke menu Islami">
       <ConfettiEffect show={showConfetti} />
 
-      {/* Top bar */}
-      <div className="relative flex items-center justify-between mb-4">
-        <Link href="/islami" className="z-10">
-          <motion.button
-            className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            aria-label="Kembali ke halaman Islami"
-          >
-            {"◀️"}
-          </motion.button>
-        </Link>
-        <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-2xl sm:text-3xl font-bold text-emerald-800 whitespace-nowrap pointer-events-none">
-          Asmaul Husna {"✨"}
-        </h1>
-        <div className="flex items-center gap-2 z-10">
-          <FocusModeButton />
-          <StarCounter />
-        </div>
-      </div>
-
       {/* Progress indicator */}
-      <div className="text-center mb-2">
-        <p className="font-body text-sm text-emerald-600/80">
-          {currentIndex + 1}/{total}
-        </p>
-        <div className="w-full max-w-xs mx-auto h-2 bg-emerald-200 rounded-full overflow-hidden mt-1">
+      <div className="text-center mb-4">
+        <p className="font-body text-base text-ink-muted">{currentIndex + 1}/{total}</p>
+        <div className="w-full max-w-xs mx-auto h-2 bg-line rounded-full overflow-hidden mt-1">
           <motion.div
-            className="h-full bg-emerald-500 rounded-full"
-            animate={{ width: `${((currentIndex + 1) / total) * 100}%` }}
+            className="h-full bg-good-strong rounded-full origin-left"
+            initial={false}
+            animate={{ scaleX: (currentIndex + 1) / total }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           />
         </div>
       </div>
 
-      {/* Card area */}
-      <div className="flex-1 flex flex-col items-center justify-center">
-        <div className="relative w-full max-w-sm" style={{ minHeight: 300 }}>
+      <div className="flex flex-col items-center">
+        <div className="relative w-full max-w-sm" style={{ minHeight: 340 }}>
           <AnimatePresence mode="wait" custom={direction}>
             {currentItem && (
               <motion.div
@@ -146,78 +116,32 @@ export default function AsmaulHusnaPage() {
                 initial="enter"
                 animate="center"
                 exit="exit"
-                transition={{
-                  type: "tween",
-                  duration: 0.25,
-                }}
-                className="absolute inset-0 bg-white rounded-3xl shadow-xl border-2 border-emerald-200 p-6 sm:p-8 flex flex-col items-center justify-center"
+                transition={{ type: "tween", duration: 0.25 }}
+                className="absolute inset-0 bg-surface rounded-3xl border border-line p-6 sm:p-8 flex flex-col items-center justify-center"
               >
-                {/* Number badge */}
-                <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-heading text-lg font-bold mb-4 shadow-md">
+                <div className="w-11 h-11 rounded-full bg-good-strong text-on-accent flex items-center justify-center font-heading text-lg font-bold mb-4">
                   {currentItem.number}
                 </div>
-
-                {/* Arabic text */}
-                <p
-                  className="text-4xl sm:text-5xl text-emerald-900 mb-4 leading-relaxed"
-                  style={{ fontFamily: "var(--font-amiri)" }}
-                  dir="rtl" lang="ar"
-                >
+                <p className="font-arabic text-5xl text-ink mb-4 leading-relaxed" dir="rtl" lang="ar">
                   {currentItem.arabic}
                 </p>
-
-                {/* Latin name */}
-                <h2 className="font-heading text-2xl font-bold text-emerald-800 mb-2">
-                  {currentItem.latin}
-                </h2>
-
-                {/* Meaning */}
-                <p className="text-lg text-gray-600 font-body text-center">
-                  {currentItem.meaning}
-                </p>
-
-                {/* Listen button */}
-                <motion.button
-                  onClick={handleListen}
-                  className="mt-5 bg-emerald-600 text-white font-heading text-lg px-8 py-3 rounded-2xl shadow-lg min-h-[52px] active:bg-emerald-700 transition-colors"
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {"🔊"} Dengar
-                </motion.button>
+                <h2 className="font-heading text-3xl font-bold text-ink mb-2">{currentItem.latin}</h2>
+                <p className="text-xl text-ink-muted font-body text-center">{currentItem.meaning}</p>
+                <BigButton onClick={handleListen} className="mt-5">
+                  <Icon name="speaker" /> Dengar
+                </BigButton>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Navigation arrows */}
-        <div className="flex items-center justify-center gap-8 mt-6">
-          <motion.button
-            onClick={goPrev}
-            disabled={currentIndex === 0}
-            className={`w-16 h-16 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-2 transition-colors ${
-              currentIndex === 0
-                ? "bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed"
-                : "bg-white border-emerald-300 text-emerald-700 active:bg-emerald-50"
-            }`}
-            whileTap={currentIndex > 0 ? { scale: 0.9 } : {}}
-            aria-label="Sebelumnya"
-          >
-            {"◀️"}
-          </motion.button>
-
-          <motion.button
-            onClick={goNext}
-            disabled={currentIndex >= total - 1}
-            className={`w-16 h-16 flex items-center justify-center rounded-full text-2xl font-bold shadow-lg border-2 transition-colors ${
-              currentIndex >= total - 1
-                ? "bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed"
-                : "bg-white border-emerald-300 text-emerald-700 active:bg-emerald-50"
-            }`}
-            whileTap={currentIndex < total - 1 ? { scale: 0.9 } : {}}
-            aria-label="Selanjutnya"
-          >
-            {"▶️"}
-          </motion.button>
+        <div className="grid grid-cols-2 gap-3 w-full max-w-sm mt-5">
+          <BigButton tone="quiet" onClick={goPrev} disabled={currentIndex === 0} aria-label="Sebelumnya">
+            <Icon name="prev" size={32} />
+          </BigButton>
+          <BigButton tone="quiet" onClick={goNext} disabled={currentIndex >= total - 1} aria-label="Selanjutnya">
+            <Icon name="next" size={32} />
+          </BigButton>
         </div>
       </div>
 
@@ -225,45 +149,33 @@ export default function AsmaulHusnaPage() {
       <AnimatePresence>
         {showReward && (
           <motion.div
-            className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-6"
+            className="fixed inset-0 z-40 bg-paper flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
           >
-            <motion.div
-              className="bg-white rounded-3xl p-8 shadow-2xl border-2 border-amber-300 text-center max-w-sm w-full"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 300, damping: 15 }}
-            >
-              <p className="text-6xl mb-4">{"🌟"}</p>
-              <h2 className="font-heading text-2xl font-bold text-emerald-800 mb-2">
-                Subhanallah! Kamu Hebat! {"🌟"}
-              </h2>
-              <p className="font-body text-emerald-600 mb-6">
-                Kamu sudah belajar semua 10 Asmaul Husna!
-              </p>
-              <div className="flex flex-col gap-3">
-                <motion.button
-                  onClick={() => setShowReward(false)}
-                  className="w-full bg-emerald-600 text-white font-heading text-lg px-8 py-3 rounded-2xl shadow-lg active:bg-emerald-700 transition-colors"
-                  whileTap={{ scale: 0.95 }}
-                >
+            <div className="bg-surface rounded-3xl p-8 border border-line text-center max-w-sm w-full flex flex-col items-center gap-3">
+              <span className="w-20 h-20 rounded-full bg-good-strong text-on-accent flex items-center justify-center">
+                <Icon name="star" size={40} />
+              </span>
+              <h2 className="font-heading text-2xl font-bold text-ink">Subhanallah! Kamu Hebat!</h2>
+              <p className="font-body text-lg text-ink-muted">Kamu sudah belajar semua 10 Asmaul Husna!</p>
+              <div className="flex flex-col gap-3 w-full mt-2">
+                <BigButton onClick={() => setShowReward(false)} className="w-full">
                   Lanjutkan Belajar
-                </motion.button>
-                <Link href="/islami" className="w-full">
-                  <motion.button
-                    className="w-full bg-white text-emerald-600 font-heading text-lg px-8 py-3 rounded-2xl shadow-md border-2 border-emerald-200 active:bg-emerald-50 transition-colors"
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    🏠 Menu Islami
-                  </motion.button>
+                </BigButton>
+                <Link
+                  href="/islami"
+                  className="inline-flex items-center justify-center gap-3 min-h-[72px] px-6 rounded-3xl font-heading text-lg sm:text-xl font-semibold bg-surface text-ink border-2 border-line transition-colors hover:bg-accent-soft active:bg-line"
+                >
+                  <Icon name="home" /> Menu Islami
                 </Link>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </GameShell>
   );
 }

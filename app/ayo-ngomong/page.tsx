@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { words } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
@@ -14,13 +13,14 @@ import {
 import { playCorrect, playPop, playApplause } from "@/lib/sounds";
 import { isMatch } from "@/lib/fuzzyMatch";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
-import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameShell from "@/components/ui/GameShell";
+import BigButton from "@/components/ui/BigButton";
 import GameTutorial from "@/components/GameTutorial";
 
 const WORDS_PER_SESSION = 8;
 
 export default function AyoNgomongPage() {
-  const { totalStars, addStar, markWordLearned, incrementSession, recordGamePlay } =
+  const { addStar, markWordLearned, incrementSession, recordGamePlay } =
     useAppStore();
 
   useEffect(() => { recordGamePlay("ayo-ngomong"); }, [recordGamePlay]);
@@ -80,8 +80,23 @@ export default function AyoNgomongPage() {
     };
   }, []);
 
+  const advancingRef = useRef(false);
+
   const advanceToNext = useCallback(() => {
-    if (currentIndex < WORDS_PER_SESSION - 1) {
+    // Manual tap and the auto-advance timer must not both advance one word.
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+    if (advancingRef.current) return;
+    advancingRef.current = true;
+    // A late onresult from the previous word must not score it or skip the next one.
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+    if (currentIndex < sessionWords.length - 1) {
       setCurrentIndex((prev) => prev + 1);
       setTranscript("");
       setFeedback(null);
@@ -92,7 +107,12 @@ export default function AyoNgomongPage() {
       incrementSession();
       playApplause();
     }
-  }, [currentIndex, incrementSession]);
+  }, [currentIndex, sessionWords.length, incrementSession]);
+
+  // Re-arm the advance guard once the next word (or a restart) has rendered.
+  useEffect(() => {
+    advancingRef.current = false;
+  }, [currentIndex, sessionComplete]);
 
   const handleMatch = useCallback(() => {
     setFeedback("match");
@@ -104,25 +124,15 @@ export default function AyoNgomongPage() {
       markWordLearned(currentWord.id);
     }
 
+    if (autoAdvanceTimerRef.current) clearTimeout(autoAdvanceTimerRef.current);
     autoAdvanceTimerRef.current = setTimeout(() => {
+      autoAdvanceTimerRef.current = null;
       advanceToNext();
     }, 2000);
   }, [addStar, advanceToNext, currentWord, markWordLearned]);
 
-  const handleManualSuccess = useCallback(() => {
-    setFeedback("match");
-    setShowConfetti(true);
-    playCorrect();
-    addStar(2);
-    setScore((prev) => prev + 1);
-    if (currentWord) {
-      markWordLearned(currentWord.id);
-    }
-
-    autoAdvanceTimerRef.current = setTimeout(() => {
-      advanceToNext();
-    }, 2000);
-  }, [addStar, advanceToNext, currentWord, markWordLearned]);
+  // Parent override (or no speech support): same reward as a heard match.
+  const handleManualSuccess = handleMatch;
 
   const startListening = useCallback(() => {
     if (isListening) {
@@ -147,6 +157,7 @@ export default function AyoNgomongPage() {
     let hasResult = false;
 
     recognition.onresult = (event) => {
+      if (recognitionRef.current !== recognition) return; // aborted/stale instance
       let interimTranscript = "";
       let finalTranscript = "";
 
@@ -183,10 +194,12 @@ export default function AyoNgomongPage() {
     };
 
     recognition.onerror = () => {
+      if (recognitionRef.current !== recognition) return; // aborted/stale instance
       setIsListening(false);
     };
 
     recognition.onend = () => {
+      if (recognitionRef.current !== recognition) return; // aborted/stale instance
       setIsListening(false);
       if (!hasResult) {
         setFeedback("no_speech");
@@ -208,6 +221,10 @@ export default function AyoNgomongPage() {
   }, [currentWord]);
 
   const handleRestartSession = useCallback(() => {
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
     setCurrentIndex(0);
     setTranscript("");
     setFeedback(null);
@@ -219,83 +236,52 @@ export default function AyoNgomongPage() {
   // Render session complete / reward screen
   if (sessionComplete) {
     return (
-      <div className="min-h-screen bg-purple-50 flex flex-col items-center justify-center px-4">
+      <GameShell title="Ayo Ngomong">
         <ConfettiEffect show={true} />
 
-        <motion.div
-          className="bg-white rounded-3xl p-8 shadow-2xl max-w-sm w-full text-center"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+        <motion.section
+          className="bg-surface rounded-3xl border border-line p-6 sm:p-8 max-w-md mx-auto text-center flex flex-col items-center gap-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
         >
-          <motion.span
-            className="text-8xl block mb-4"
-            animate={{ rotate: [0, -10, 10, -10, 0] }}
-            transition={{ repeat: Infinity, duration: 2, delay: 0.5 }}
-          >
-            🏆
-          </motion.span>
-          <h2 className="font-heading text-3xl font-bold text-purple-700 mb-2">
-            Hebat Sekali!
-          </h2>
-          <p className="font-body text-lg text-gray-600 mb-4">
-            Kamu sudah selesai latihan!
-          </p>
-          <div className="flex items-center justify-center gap-6 mb-6">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" className="text-warn" aria-hidden="true">
+            <path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z" />
+          </svg>
+          <h2 className="font-heading text-3xl font-bold text-ink">Hebat Sekali!</h2>
+          <p className="font-body text-xl text-ink-muted">Kamu sudah selesai latihan!</p>
+          <div className="flex items-center justify-center gap-8">
             <div className="text-center">
-              <p className="text-4xl font-heading font-bold text-yellow-500">
-                {score}
-              </p>
-              <p className="font-body text-sm text-gray-500">Benar</p>
+              <p className="text-4xl font-heading font-bold text-ink">{score}</p>
+              <p className="font-body text-base text-ink-muted">Benar</p>
             </div>
             <div className="text-center">
-              <p className="text-4xl font-heading font-bold text-yellow-500">
-                ⭐ {score * 2}
-              </p>
-              <p className="font-body text-sm text-gray-500">Bintang</p>
+              <p className="text-4xl font-heading font-bold text-ink">{score * 2}</p>
+              <p className="font-body text-base text-ink-muted">Bintang</p>
             </div>
           </div>
-
-          <div className="flex flex-col gap-3">
-            <motion.button
-              onClick={handleRestartSession}
-              className="bg-purple-500 text-white rounded-2xl px-8 py-4 font-heading text-lg shadow-lg min-h-[64px]"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              🔄 Main Lagi
-            </motion.button>
-            <Link href="/">
-              <motion.button
-                className="w-full bg-yellow-400 rounded-2xl px-8 py-4 font-heading text-lg shadow-lg min-h-[64px]"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                🏠 Kembali
-              </motion.button>
-            </Link>
-          </div>
-        </motion.div>
-      </div>
+          <BigButton onClick={handleRestartSession} className="w-full sm:w-auto">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+            Main Lagi
+          </BigButton>
+        </motion.section>
+      </GameShell>
     );
   }
 
   if (!isMounted || !currentWord) {
     return (
-      <div className="min-h-screen bg-purple-50 flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="text-5xl"
-        >
-          🌟
-        </motion.div>
-      </div>
+      <GameShell title="Ayo Ngomong">
+        <p className="font-heading text-xl text-ink-muted text-center py-16">Memuat…</p>
+      </GameShell>
     );
   }
 
   return (
-    <div className="min-h-screen bg-purple-50 px-4 py-6 pb-12">
+    <GameShell title="Ayo Ngomong">
       <GameTutorial
         gameKey="ayo-ngomong"
         steps={[
@@ -303,256 +289,146 @@ export default function AyoNgomongPage() {
           { emoji: "\ud83d\udde3\ufe0f", text: "Ucapkan kata dengan jelas. Aplikasi akan menilai ucapanmu!" },
         ]}
       />
-      {/* Top bar */}
-      <div className="flex items-center justify-between mb-4">
-        <Link href="/">
-          <motion.button
-            className="w-12 h-12 min-w-[48px] min-h-[48px] bg-white rounded-full flex items-center justify-center shadow-md text-2xl"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-          >
-            🏠
-          </motion.button>
-        </Link>
-        <div className="flex items-center gap-2">
-          <FocusModeButton />
-          <div className="bg-yellow-400 rounded-full px-4 py-2 shadow-lg flex items-center gap-2 font-heading text-lg">
-            <span className="text-xl">⭐</span>
-            <span className="font-bold">{totalStars}</span>
-          </div>
-        </div>
-      </div>
 
-      {/* Progress bar */}
-      <div className="max-w-md mx-auto mb-6">
-        <div className="w-full h-3 bg-purple-200 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-purple-500 rounded-full"
-            initial={{ width: 0 }}
-            animate={{
-              width: `${((currentIndex + 1) / WORDS_PER_SESSION) * 100}%`,
-            }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-        </div>
-        <p className="text-center font-body text-sm text-purple-400 mt-1">
-          {currentIndex + 1} / {WORDS_PER_SESSION}
-        </p>
-      </div>
-
-      {/* Word Card */}
       <div className="max-w-md mx-auto">
+        {/* Progress bar */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex-1 h-2.5 bg-line rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-accent rounded-full origin-left"
+              initial={{ scaleX: 0 }}
+              animate={{ scaleX: (currentIndex + 1) / WORDS_PER_SESSION }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+            />
+          </div>
+          <p className="font-body text-base text-ink-muted">
+            {currentIndex + 1} / {WORDS_PER_SESSION}
+          </p>
+        </div>
+
+        {/* Word Card */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentWord.id}
-            className="bg-white rounded-3xl p-5 sm:p-8 shadow-xl text-center mb-6"
-            initial={{ opacity: 0, x: 60 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -60 }}
-            transition={{ type: "tween", duration: 0.25 }}
+            className={`bg-surface rounded-3xl border-2 p-5 sm:p-8 text-center mb-5 transition-colors ${
+              feedback === "match" ? "border-good-strong" : feedback ? "border-warn" : "border-line"
+            }`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
           >
-            <motion.span
-              className="text-6xl sm:text-8xl block mb-4"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{
-                type: "spring",
-                stiffness: 400,
-                damping: 15,
-                delay: 0.1,
-              }}
-            >
+            <span className="text-7xl sm:text-8xl block mb-3" aria-hidden="true">
               {currentWord.emoji}
-            </motion.span>
-            <motion.h2
-              className="font-heading text-3xl font-bold text-purple-700"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            </span>
+            <h2 className="font-heading text-4xl sm:text-5xl font-bold text-ink">
               {currentWord.word.toUpperCase()}
-            </motion.h2>
+            </h2>
+
+            {/* Transcript + feedback */}
+            <div className="min-h-[32px] mt-3" aria-live="polite">
+              {transcript && (
+                <p className="font-body text-xl text-ink-muted">
+                  Kamu bilang:{" "}
+                  <span className="font-heading font-bold text-ink">{transcript}</span>
+                </p>
+              )}
+              {feedback === "match" && (
+                <p className="font-heading text-2xl font-bold text-good-strong inline-flex items-center gap-2 mt-1">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+                  Hebat!
+                </p>
+              )}
+              {feedback === "close" && (
+                <p className="font-heading text-xl font-bold text-ink mt-1">Bagus! Coba lagi ya!</p>
+              )}
+              {feedback === "no" && (
+                <p className="font-heading text-xl font-bold text-ink mt-1">Coba lebih keras ya!</p>
+              )}
+              {feedback === "no_speech" && (
+                <p className="font-heading text-xl font-bold text-ink mt-1">Suara tidak terdengar, coba lagi!</p>
+              )}
+            </div>
           </motion.div>
         </AnimatePresence>
 
-        {/* Listen button & Skip button */}
-        <div className="flex justify-center gap-4 mb-6">
-          <motion.button
-            onClick={handleReplay}
-            className="bg-blue-400 hover:bg-blue-500 text-white rounded-2xl px-6 py-3 font-heading text-lg shadow-md flex items-center gap-2 min-h-[48px]"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            🔊 Dengar
-          </motion.button>
-          
-          <motion.button
-            onClick={advanceToNext}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 rounded-2xl px-6 py-3 font-heading text-lg shadow-md flex items-center gap-2 min-h-[48px]"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Lewati ⏭️
-          </motion.button>
-        </div>
-
-        {/* Mic Button */}
+        {/* Main action: mic (or manual fallback) */}
         {supported ? (
-          <div className="flex flex-col items-center gap-4">
-            <motion.button
+          <div className="flex flex-col items-center gap-2 mb-5">
+            <button
+              type="button"
               onClick={startListening}
               disabled={feedback === "match"}
-              className={`w-20 h-20 min-w-[64px] min-h-[64px] rounded-full flex items-center justify-center text-4xl shadow-lg transition-colors ${
+              className={`w-24 h-24 rounded-full flex items-center justify-center text-on-accent transition-colors ${
                 isListening
-                  ? "bg-red-500 animate-pulse-mic"
-                  : "bg-pink-400 hover:bg-pink-500"
-              } ${
-                feedback === "match"
-                  ? "opacity-50 cursor-not-allowed"
-                  : "cursor-pointer"
+                  ? "bg-ink animate-pulse-mic motion-reduce:animate-none"
+                  : "bg-accent-strong hover:bg-ink active:bg-ink"
               }`}
-              whileHover={feedback !== "match" ? { scale: 1.1 } : {}}
-              whileTap={feedback !== "match" ? { scale: 0.9 } : {}}
               aria-label={
                 isListening ? "Berhenti mendengar" : "Mulai bicara"
               }
             >
-              🎤
-            </motion.button>
-
-            {isListening && (
-              <motion.p
-                className="font-body text-sm text-red-400"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                Sedang mendengarkan...
-              </motion.p>
-            )}
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <path d="M12 18v3" />
+              </svg>
+            </button>
+            <p className="font-heading text-lg text-ink-muted">
+              {isListening ? "Sedang mendengarkan…" : "Bicara"}
+            </p>
           </div>
         ) : (
-          /* Fallback for unsupported browsers */
-          <div className="flex flex-col items-center gap-4">
-            <div className="bg-yellow-100 border-2 border-yellow-300 rounded-2xl p-4 text-center max-w-sm">
-              <p className="font-body text-sm text-yellow-800">
-                Fitur ini memerlukan browser Chrome atau Edge
-              </p>
-            </div>
-            <motion.button
-              onClick={handleManualSuccess}
-              disabled={feedback === "match"}
-              className={`bg-green-500 hover:bg-green-600 text-white rounded-2xl px-8 py-4 font-heading text-xl shadow-lg min-h-[64px] ${
-                feedback === "match"
-                  ? "opacity-50 cursor-not-allowed"
-                  : "cursor-pointer"
-              }`}
-              whileHover={feedback !== "match" ? { scale: 1.05 } : {}}
-              whileTap={feedback !== "match" ? { scale: 0.95 } : {}}
-            >
-              Berhasil ✅
-            </motion.button>
+          <div className="flex flex-col items-center gap-3 mb-5">
+            <p className="font-body text-base text-ink-muted text-center">
+              Fitur ini memerlukan browser Chrome atau Edge
+            </p>
+            <BigButton tone="good" onClick={handleManualSuccess} disabled={feedback === "match"}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              Berhasil
+            </BigButton>
           </div>
         )}
 
-        {/* Transcript display */}
-        <AnimatePresence>
-          {transcript && (
-            <motion.div
-              className="mt-6 text-center"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-            >
-              <p className="font-body text-lg text-gray-600">
-                Kamu bilang:{" "}
-                <span className="font-heading font-bold text-purple-600">
-                  {transcript}
-                </span>
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Secondary actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <BigButton tone="quiet" onClick={handleReplay}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M11 5 6 9H3v6h3l5 4z" />
+              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+              <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+            </svg>
+            Dengar
+          </BigButton>
+          <BigButton tone="quiet" onClick={advanceToNext}>
+            Lewati
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m6 5 7 7-7 7" />
+              <path d="M17 5v14" />
+            </svg>
+          </BigButton>
+        </div>
 
-        {/* Feedback display */}
-        <AnimatePresence>
-          {feedback === "match" && (
-            <motion.div
-              className="mt-4 text-center"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              <p className="font-heading text-3xl font-bold text-green-500">
-                Hebat! 🎉
-              </p>
-            </motion.div>
-          )}
-
-          {feedback === "close" && (
-            <motion.div
-              className="mt-4 text-center"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              <p className="font-heading text-2xl font-bold text-orange-500">
-                Bagus! Coba lagi ya! 😊
-              </p>
-            </motion.div>
-          )}
-
-          {feedback === "no" && (
-            <motion.div
-              className="mt-4 text-center"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              <p className="font-heading text-2xl font-bold text-blue-500">
-                Coba lebih keras ya! 💪
-              </p>
-            </motion.div>
-          )}
-
-          {feedback === "no_speech" && (
-            <motion.div
-              className="mt-4 text-center"
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            >
-              <p className="font-heading text-xl font-bold text-gray-500">
-                Suara tidak terdengar, coba lagi! 🎤
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Manual fallback button also shown when speech is supported but for parent assistance */}
+        {/* Parent override: mic missed a word the child did say */}
         {supported && (feedback === "close" || feedback === "no" || feedback === "no_speech") && (
-          <motion.div
-            className="mt-4 flex justify-center"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <motion.button
+          <div className="flex justify-center mt-4">
+            <button
+              type="button"
               onClick={handleManualSuccess}
-              className="bg-green-400 hover:bg-green-500 text-white rounded-2xl px-6 py-3 font-heading text-base shadow-md min-h-[48px]"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              className="min-h-[48px] px-4 rounded-full font-body text-base text-ink-muted underline underline-offset-4 transition-colors hover:text-ink"
             >
-              Berhasil ✅
-            </motion.button>
-          </motion.div>
+              Tandai berhasil
+            </button>
+          </div>
         )}
       </div>
 
       {/* Confetti */}
       <ConfettiEffect show={showConfetti} />
-    </div>
+    </GameShell>
   );
 }

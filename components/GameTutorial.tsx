@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import BigButton from "@/components/ui/BigButton";
 
 interface Step {
-  emoji: string;
+  emoji?: string;
   text: string;
 }
 
@@ -39,40 +40,45 @@ export default function GameTutorial({ gameKey, steps }: GameTutorialProps) {
     <AnimatePresence>
       {show && (
         <motion.div
-          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center px-6 pb-12"
+          className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center px-4 pb-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/30"
+            className="absolute inset-0 bg-[var(--scrim)]"
             onClick={handleDismiss}
           />
 
           {/* Card */}
           <motion.div
-            className="relative bg-white rounded-3xl p-6 shadow-2xl max-w-sm w-full border-2 border-purple-100"
-            initial={{ opacity: 0, y: 60, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 60, scale: 0.9 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="relative bg-surface rounded-3xl p-6 max-w-sm w-full border border-line"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 24 }}
+            transition={{ duration: 0.25 }}
           >
             <div className="flex flex-col items-center text-center">
-              <span className="text-5xl mb-4">{current.emoji}</span>
-              <p className="font-body text-base sm:text-lg text-foreground/90 leading-relaxed mb-6">
+              {/* Step picture for pre-readers (content from the page) */}
+              {current.emoji && (
+                <span className="flex items-center justify-center w-24 h-24 rounded-full bg-accent-soft text-5xl mb-4" aria-hidden="true">
+                  {current.emoji}
+                </span>
+              )}
+              <p className="font-body text-xl text-ink leading-relaxed mb-6">
                 {current.text}
               </p>
             </div>
 
             {/* Dots */}
             {steps.length > 1 && (
-              <div className="flex justify-center gap-1.5 mb-5">
+              <div className="flex justify-center gap-2 mb-5" aria-hidden="true">
                 {steps.map((_, i) => (
                   <div
                     key={i}
-                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                      i === step ? "bg-purple-500 w-5" : "bg-purple-200"
+                    className={`h-2.5 rounded-full transition-colors ${
+                      i === step ? "bg-accent-strong w-6" : "bg-line w-2.5"
                     }`}
                   />
                 ))}
@@ -82,19 +88,12 @@ export default function GameTutorial({ gameKey, steps }: GameTutorialProps) {
             {/* Buttons */}
             <div className="flex justify-center gap-3">
               {!isLast && (
-                <motion.button
-                  className="bg-gray-100 text-foreground/60 font-heading text-sm px-5 py-2.5 rounded-full"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleDismiss}
-                >
+                <BigButton tone="quiet" className="flex-1" onClick={handleDismiss}>
                   Lewati
-                </motion.button>
+                </BigButton>
               )}
-              <motion.button
-                className="bg-purple-600 text-white font-heading text-base px-6 py-2.5 rounded-full shadow-md"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <BigButton
+                className="flex-1"
                 onClick={() => {
                   if (isLast) {
                     handleDismiss();
@@ -103,8 +102,8 @@ export default function GameTutorial({ gameKey, steps }: GameTutorialProps) {
                   }
                 }}
               >
-                {isLast ? "Mulai! \ud83d\ude80" : "Lanjut"}
-              </motion.button>
+                {isLast ? "Mulai!" : "Lanjut"}
+              </BigButton>
             </div>
           </motion.div>
         </motion.div>

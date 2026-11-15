@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ConfettiEffect from "./ConfettiEffect";
+import BigButton from "./BigButton";
 
 interface RewardOverlayProps {
   show: boolean;
@@ -28,29 +29,32 @@ export default function RewardOverlay({
     <AnimatePresence>
       {show && (
         <motion.div
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40"
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-[var(--scrim)] px-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
           <ConfettiEffect show={show} />
           <motion.div
-            className="flex flex-col items-center gap-4 bg-white rounded-3xl p-10 shadow-2xl"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="flex flex-col items-center gap-5 bg-surface border border-line rounded-3xl p-8 max-w-sm w-full"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.25 }}
           >
-            <span className="text-8xl">{emoji}</span>
-            <p className="text-2xl font-heading text-center text-purple-700">
+            {/* Reward picture (content, from the page) */}
+            <span className="flex items-center justify-center w-28 h-28 rounded-full bg-accent-soft text-6xl" aria-hidden="true">
+              {emoji}
+            </span>
+            <p className="text-3xl font-heading font-semibold text-center text-ink">
               {message}
             </p>
-            <button
-              onClick={onClose}
-              className="mt-2 bg-yellow-400 rounded-2xl px-8 py-3 font-heading text-lg shadow-lg active:scale-95 transition-transform"
-            >
-              Lanjut!
-            </button>
+            <BigButton onClick={onClose} className="w-full">
+              Lanjut
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M5 12h14m-6-6 6 6-6 6" />
+              </svg>
+            </BigButton>
           </motion.div>
         </motion.div>
       )}

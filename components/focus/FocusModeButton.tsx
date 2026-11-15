@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useFocusStore } from "@/store/useFocusStore";
 import { useAppStore } from "@/store/useAppStore";
 import { enterFullscreen } from "@/hooks/useFocusMode";
@@ -18,15 +17,17 @@ export default function FocusModeButton() {
   };
 
   return (
-    <motion.button
+    <button
+      type="button"
       onClick={handleClick}
-      className="flex items-center gap-1.5 bg-purple-500 text-white rounded-full px-3 py-1.5 font-heading text-xs shadow-md min-h-[36px]"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      className="flex items-center gap-2 bg-accent-strong text-on-accent rounded-full px-3 font-heading text-sm min-h-[44px] hover:bg-ink transition-colors"
       aria-label="Aktifkan mode belajar"
     >
-      <span>{"\ud83d\udd12"}</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="5" y="11" width="14" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </svg>
       <span>Mode Belajar {sessionDuration}m</span>
-    </motion.button>
+    </button>
   );
 }

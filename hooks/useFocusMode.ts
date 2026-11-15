@@ -53,14 +53,13 @@ export function useFocusMode() {
 
   // Body class for CSS-based navigation blocking + iOS pseudo-fullscreen
   useEffect(() => {
-    if (isFocusMode) {
-      document.body.classList.add("focus-mode-active");
-    } else {
-      document.body.classList.remove("focus-mode-active");
-    }
+    // html carries the scroll lock: with html overflow-x:clip, body overflow no longer reaches the viewport.
+    document.body.classList.toggle("focus-mode-active", isFocusMode);
+    document.documentElement.classList.toggle("focus-mode-active", isFocusMode);
 
     return () => {
       document.body.classList.remove("focus-mode-active");
+      document.documentElement.classList.remove("focus-mode-active");
     };
   }, [isFocusMode]);
 

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { dailyDoas } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
 import { speak, createSpeechRecognition, isSpeechRecognitionSupported } from "@/lib/speech";
 import { playPop, playApplause } from "@/lib/sounds";
-import StarCounter from "@/components/ui/StarCounter";
-import FocusModeButton from "@/components/focus/FocusModeButton";
+import GameShell from "@/components/ui/GameShell";
+import BigButton from "@/components/ui/BigButton";
+import Icon from "@/components/ui/Icon";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 export default function DoaHarianPage() {
@@ -107,12 +107,7 @@ export default function DoaHarianPage() {
   const supportsSpeechRecognition = isSpeechRecognitionSupported();
 
   return (
-    <motion.div
-      className="islamic-pattern min-h-screen px-4 py-4 pb-12"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
+    <GameShell title="Doa Harian" backHref="/islami" onBack={selectedDoa ? handleBack : undefined} backLabel={selectedDoa ? "Kembali ke daftar doa" : "Kembali ke menu Islami"}>
       <ConfettiEffect show={showConfetti} />
 
       <AnimatePresence mode="wait">
@@ -120,63 +115,29 @@ export default function DoaHarianPage() {
           /* ==================== LIST VIEW ==================== */
           <motion.div
             key="list-view"
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            exit={{ opacity: 0, x: -24 }}
+            transition={{ duration: 0.25 }}
           >
-            {/* Top bar */}
-            <div className="relative flex items-center justify-between mb-6">
-              <Link href="/islami" className="z-10">
-                <motion.button
-                  className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label="Kembali ke halaman Islami"
-                >
-                  {"◀️"}
-                </motion.button>
-              </Link>
-              <h1 className="absolute left-1/2 -translate-x-1/2 font-heading text-2xl sm:text-3xl font-bold text-emerald-800 whitespace-nowrap pointer-events-none">
-                Doa Harian {"🤲"}
-              </h1>
-              <div className="flex items-center gap-2 z-10">
-                <FocusModeButton />
-                <StarCounter />
-              </div>
-            </div>
-
-            {/* Grid of doa cards */}
             <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
-              {dailyDoas.map((doa, index) => {
+              {dailyDoas.map((doa) => {
                 const isAttempted = doasAttempted.includes(doa.id);
                 return (
                   <motion.button
                     key={doa.id}
                     onClick={() => handleSelectDoa(doa.id)}
-                    className="relative bg-white rounded-2xl p-4 shadow-lg border-2 border-emerald-200 flex flex-col items-center text-center min-h-[140px] cursor-pointer active:bg-emerald-50 transition-colors"
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      delay: index * 0.05,
-                      type: "spring",
-                      stiffness: 300,
-                      damping: 20,
-                    }}
-                    whileTap={{ scale: 0.95 }}
+                    className="relative bg-surface rounded-3xl p-4 border border-line flex flex-col items-center text-center min-h-[140px] transition-colors hover:bg-accent-soft active:bg-line"
+                    whileTap={{ scale: 0.97 }}
                   >
                     {isAttempted && (
-                      <div className="absolute top-2 right-2 text-lg">
-                        {"✅"}
-                      </div>
+                      <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-good-strong text-on-accent flex items-center justify-center" role="img" aria-label="Sudah dicoba">
+                        <Icon name="check" size={20} />
+                      </span>
                     )}
-                    <span className="text-4xl mb-2">{doa.emoji}</span>
-                    <h3 className="font-heading text-lg font-bold text-emerald-800 leading-tight">
-                      {doa.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1 font-body">
-                      {doa.situation}
-                    </p>
+                    <span className="text-5xl mb-2">{doa.emoji}</span>
+                    <h3 className="font-heading text-lg font-bold text-ink leading-tight">{doa.title}</h3>
+                    <p className="text-sm text-ink-muted mt-1 font-body">{doa.situation}</p>
                   </motion.button>
                 );
               })}
@@ -186,145 +147,84 @@ export default function DoaHarianPage() {
           /* ==================== DETAIL VIEW ==================== */
           <motion.div
             key="detail-view"
-            initial={{ opacity: 0, x: 50 }}
+            initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 50 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="max-w-lg mx-auto"
+            exit={{ opacity: 0, x: 24 }}
+            transition={{ duration: 0.25 }}
+            className="max-w-lg mx-auto flex flex-col gap-4"
           >
-            {/* Back button */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <motion.button
-                  onClick={handleBack}
-                  className="w-[52px] h-[52px] flex items-center justify-center bg-white/80 rounded-full shadow-md border-2 border-gray-200 text-2xl"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  aria-label="Kembali ke daftar doa"
-                >
-                  {"◀️"}
-                </motion.button>
-                <p className="font-body text-sm text-emerald-600/80">
-                  Kembali ke daftar
-                </p>
-              </div>
-              <StarCounter />
-            </div>
-
-            {/* Doa content card */}
-            <div className="bg-white rounded-3xl shadow-xl border-2 border-emerald-200 p-5 sm:p-6">
-              {/* Emoji */}
-              <motion.div
-                className="text-center mb-3"
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 400, damping: 15 }}
-              >
+            <div className="bg-surface rounded-3xl border border-line p-5 sm:p-6">
+              <div className="text-center mb-3">
                 <span className="text-6xl">{selectedDoa.emoji}</span>
-              </motion.div>
+              </div>
 
-              {/* Title */}
-              <h2 className="font-heading text-2xl font-bold text-emerald-800 text-center mb-1">
-                {selectedDoa.title}
-              </h2>
-
-              {/* Situation */}
-              <p className="text-center text-sm text-amber-700 font-body mb-4">
+              <h2 className="font-heading text-3xl font-bold text-ink text-center mb-1">{selectedDoa.title}</h2>
+              <p className="text-center text-base text-ink-muted font-body mb-4">
                 Dibaca saat: {selectedDoa.situation}
               </p>
 
               {/* Arabic text */}
-              <div
-                className="bg-emerald-50 p-6 rounded-2xl mb-4"
-                dir="rtl" lang="ar"
-              >
-                <p
-                  className="text-3xl text-right text-emerald-900 leading-loose"
-                  style={{ fontFamily: "var(--font-amiri)" }}
-                >
-                  {selectedDoa.arabic}
-                </p>
+              <div className="bg-paper p-6 rounded-2xl mb-4" dir="rtl" lang="ar">
+                <p className="font-arabic text-4xl text-right text-ink leading-loose">{selectedDoa.arabic}</p>
               </div>
 
               {/* Latin transliteration */}
               <div className="mb-3">
-                <p className="text-xl text-emerald-800 leading-relaxed font-body text-center mb-3">
-                  {selectedDoa.latin}
-                </p>
-
-                {/* Syllable pills */}
-                <div className="flex flex-wrap gap-2 justify-center">
+                <p className="text-xl text-ink leading-relaxed font-body text-center mb-3">{selectedDoa.latin}</p>
+                <div className="flex flex-wrap gap-3 justify-center">
                   {selectedDoa.syllablesLatin.map((syl, i) => (
-                    <motion.button
+                    <button
                       key={`${syl}-${i}`}
+                      type="button"
                       onClick={() => handleSyllableTap(syl)}
-                      className="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-heading text-base px-3 py-1.5 rounded-full min-w-[44px] min-h-[44px] border border-emerald-300 active:bg-emerald-300 transition-colors"
-                      whileTap={{ scale: 0.9 }}
+                      className="bg-accent-soft text-ink font-heading text-lg px-4 rounded-full min-w-[48px] min-h-[48px] border border-line transition-colors hover:bg-line active:bg-line"
                     >
                       {syl}
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Meaning */}
-              <p className="text-gray-600 italic text-center font-body text-sm mb-5 leading-relaxed">
+              <p className="text-ink-muted italic text-center font-body text-base mb-5 leading-relaxed">
                 &ldquo;{selectedDoa.meaning}&rdquo;
               </p>
 
-              {/* Action buttons */}
               <div className="flex flex-col gap-3">
-                {/* Listen button */}
-                <motion.button
-                  onClick={handleListen}
-                  className="w-full bg-emerald-600 text-white font-heading text-lg py-4 rounded-2xl shadow-lg min-h-[64px] active:bg-emerald-700 transition-colors"
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {"🔊"} Dengar
-                </motion.button>
+                <BigButton onClick={handleListen} className="w-full">
+                  <Icon name="speaker" /> Dengar
+                </BigButton>
 
-                {/* Try speaking button */}
                 {!showSuccess && (
                   <>
                     {supportsSpeechRecognition ? (
-                      <motion.button
+                      <BigButton
+                        tone={isListening ? "primary" : "good"}
                         onClick={handleTrySpeak}
-                        className={`w-full font-heading text-lg py-4 rounded-2xl shadow-lg min-h-[64px] transition-colors ${
-                          isListening
-                            ? "bg-red-500 text-white animate-pulse-mic"
-                            : "bg-amber-500 text-white active:bg-amber-600"
-                        }`}
-                        whileTap={{ scale: 0.95 }}
+                        aria-pressed={isListening}
+                        className="w-full"
                       >
-                        {isListening ? "🎤 Sedang mendengar..." : "🎤 Coba Ucapkan"}
-                      </motion.button>
+                        <Icon name="mic" /> {isListening ? "Sedang mendengar…" : "Coba Ucapkan"}
+                      </BigButton>
                     ) : (
-                      <motion.button
-                        onClick={handleSuccess}
-                        className="w-full bg-amber-500 text-white font-heading text-lg py-4 rounded-2xl shadow-lg min-h-[64px] active:bg-amber-600 transition-colors"
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        Berhasil {"✅"}
-                      </motion.button>
+                      <BigButton tone="good" onClick={handleSuccess} className="w-full">
+                        <Icon name="check" /> Berhasil
+                      </BigButton>
                     )}
                   </>
                 )}
 
-                {/* Success message */}
                 {showSuccess && (
                   <motion.div
-                    className="bg-gradient-to-r from-emerald-100 to-amber-100 rounded-2xl p-5 text-center border-2 border-emerald-300"
-                    initial={{ opacity: 0, scale: 0.8 }}
+                    className="bg-paper rounded-2xl p-5 text-center flex flex-col items-center gap-2"
+                    initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                    transition={{ duration: 0.25 }}
                   >
-                    <p className="text-3xl mb-2">{"🌟"}</p>
-                    <p className="font-heading text-xl text-emerald-800 font-bold">
-                      MasyaAllah! Hebat! {"🌟"}
-                    </p>
-                    <p className="font-body text-sm text-emerald-600 mt-1">
-                      +3 bintang
-                    </p>
+                    <span className="w-14 h-14 rounded-full bg-good-strong text-on-accent flex items-center justify-center">
+                      <Icon name="star" size={28} />
+                    </span>
+                    <p className="font-heading text-2xl text-ink font-bold">MasyaAllah! Hebat!</p>
+                    <p className="font-body text-base text-ink-muted">+3 bintang</p>
                   </motion.div>
                 )}
               </div>
@@ -332,6 +232,6 @@ export default function DoaHarianPage() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </GameShell>
   );
 }

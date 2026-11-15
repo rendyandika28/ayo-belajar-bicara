@@ -121,14 +121,14 @@ export default function FocusModeWrapper() {
     <>
       {!showBreak && (
         <motion.div
-          className={`fixed bottom-6 right-4 z-[85] bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border-2 border-purple-300 font-heading text-lg select-none ${
-            secondsRemaining < 60 ? "animate-pulse" : ""
+          className={`fixed bottom-6 right-4 z-[85] bg-surface rounded-full px-4 min-h-[44px] flex items-center border-2 font-heading text-lg select-none tabular-nums ${
+            secondsRemaining < 60 ? "border-warn" : "border-line"
           }`}
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          transition={{ duration: 0.25 }}
         >
-          <span className="text-purple-700 font-bold">
+          <span className="text-ink font-bold">
             {formatTime(secondsRemaining)}
           </span>
         </motion.div>
@@ -143,19 +143,21 @@ export default function FocusModeWrapper() {
             onTouchStart={handlePressStart}
             onTouchEnd={handlePressEnd}
             onTouchCancel={handlePressEnd}
-            className="w-16 h-16 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full shadow-lg border-2 border-gray-300 text-2xl cursor-pointer select-none"
-            whileTap={{ scale: 0.9 }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
+            className="w-16 h-16 flex items-center justify-center bg-surface text-ink rounded-full border-2 border-line cursor-pointer select-none"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             aria-label="Tekan lama untuk keluar"
           >
-            {pressProgress > 0 ? "\u23f3" : "\ud83d\udd12"}
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d={pressProgress > 0 ? "M8 11V7a4 4 0 0 1 7.5-2" : "M8 11V7a4 4 0 0 1 8 0v4"} />
+            </svg>
           </motion.button>
 
           {pressProgress > 0 && (
-            <div className="w-20 h-1 bg-gray-200 rounded-full overflow-hidden">
-              <motion.div
-                className="h-full bg-purple-500 rounded-full"
+            <div className="w-20 h-1.5 bg-line rounded-full overflow-hidden">
+              <div
+                className="h-full bg-accent-strong rounded-full"
                 style={{ width: `${pressProgress * 100}%` }}
               />
             </div>
@@ -163,7 +165,7 @@ export default function FocusModeWrapper() {
 
           {pressProgress === 0 && (
             <motion.p
-              className="font-body text-xs text-white/70 text-center max-w-[160px] leading-relaxed"
+              className="font-body text-sm text-ink-muted bg-surface rounded-xl px-3 py-1 text-center max-w-[180px] leading-relaxed"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1 }}
@@ -172,8 +174,8 @@ export default function FocusModeWrapper() {
             </motion.p>
           )}
           {pressProgress > 0 && pressProgress < 1 && (
-            <p className="font-body text-xs text-white font-semibold">
-              Tahan {Math.ceil(LONG_PRESS_MS / 1000 - pressProgress * (LONG_PRESS_MS / 1000))} detik lagi...
+            <p className="font-body text-sm text-ink bg-surface rounded-xl px-3 py-1 font-semibold">
+              Tahan {Math.ceil(LONG_PRESS_MS / 1000 - pressProgress * (LONG_PRESS_MS / 1000))} detik lagi…
             </p>
           )}
         </div>
@@ -182,26 +184,19 @@ export default function FocusModeWrapper() {
       <AnimatePresence>
         {isTabAway && !showBreak && (
           <motion.div
-            className="fixed inset-0 z-[95] flex items-center justify-center bg-purple-900/80"
+            className="fixed inset-0 z-[95] flex items-center justify-center bg-paper"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div
-              className="flex flex-col items-center gap-4 text-center px-6"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <span className="text-8xl">{"\ud83d\udc4b"}</span>
-              <h2 className="font-heading text-3xl font-bold text-white">
+            <div className="flex flex-col items-center gap-4 text-center px-6">
+              <h2 className="font-heading text-3xl font-bold text-ink">
                 Ayo kembali belajar!
               </h2>
-              <p className="font-body text-lg text-white/80">
+              <p className="font-body text-lg text-ink-muted">
                 Si kecil masih dalam Mode Belajar
               </p>
-            </motion.div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
