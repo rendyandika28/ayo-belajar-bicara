@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { asset } from "@/lib/asset";
 import { motion, AnimatePresence } from "framer-motion";
 import BigButton from "@/components/ui/BigButton";
 
 interface Step {
   emoji?: string;
+  /** AI picture, e.g. /images/ui/listen.webp (npm run gen:ui). Wins over emoji. */
+  image?: string;
   text: string;
 }
 
@@ -61,7 +64,12 @@ export default function GameTutorial({ gameKey, steps }: GameTutorialProps) {
           >
             <div className="flex flex-col items-center text-center">
               {/* Step picture for pre-readers (content from the page) */}
-              {current.emoji && (
+              {current.image ? (
+                <span className="block w-28 h-28 rounded-3xl overflow-hidden bg-paper mb-4" aria-hidden="true">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={asset(current.image)} alt="" className="w-full h-full object-cover" />
+                </span>
+              ) : current.emoji && (
                 <span className="flex items-center justify-center w-24 h-24 rounded-full bg-accent-soft text-5xl mb-4" aria-hidden="true">
                   {current.emoji}
                 </span>

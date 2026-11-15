@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { asset } from "@/lib/asset";
 import { motion, AnimatePresence } from "framer-motion";
 import { speak, speakSyllable } from "@/lib/speech";
 import { words, categories } from "@/data/words";
@@ -8,6 +9,7 @@ import { useAppStore } from "@/store/useAppStore";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
 import GameTutorial from "@/components/GameTutorial";
+import WordPicture from "@/components/WordPicture";
 import { playPop } from "@/lib/sounds";
 
 export default function KartuKataPage() {
@@ -111,8 +113,8 @@ export default function KartuKataPage() {
       <GameTutorial
         gameKey="kartu-kata"
         steps={[
-          { emoji: "\ud83d\udcda", text: "Geser atau tekan tombol panah untuk melihat kata berikutnya." },
-          { emoji: "\ud83d\udd0a", text: "Ketuk kartu untuk mendengar cara membaca kata yang benar." },
+          { image: "/images/words/bnd-3.webp", text: "Geser atau tekan tombol panah untuk melihat kata berikutnya." },
+          { image: "/images/ui/listen.webp", text: "Ketuk kartu untuk mendengar cara membaca kata yang benar." },
         ]}
       />
 
@@ -130,7 +132,8 @@ export default function KartuKataPage() {
                   : "bg-surface border-line text-ink-muted hover:bg-accent-soft"
               }`}
             >
-              <span aria-hidden="true">{cat.emoji}</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={asset(cat.image)} alt="" aria-hidden="true" className="w-7 h-7 rounded-full object-cover bg-paper -ml-1.5" />
               <span>{cat.label}</span>
             </button>
           ))}
@@ -153,7 +156,7 @@ export default function KartuKataPage() {
               {currentIndex + 1} / {allWords.length}
             </p>
 
-            <div className="relative w-full max-w-sm" style={{ minHeight: 340 }}>
+            <div className="relative w-full max-w-sm" style={{ minHeight: 400 }}>
               <AnimatePresence mode="wait" custom={direction}>
                 {currentWord && (
                   <motion.div
@@ -167,20 +170,9 @@ export default function KartuKataPage() {
                     onClick={handleCardTap}
                     className="absolute inset-0 bg-surface rounded-3xl border border-line p-6 flex flex-col items-center justify-center cursor-pointer select-none"
                   >
-                    {currentWord.image ? (
-                      <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-2xl overflow-hidden mb-4">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={currentWord.image}
-                          alt={currentWord.word}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-7xl sm:text-8xl leading-none mb-4" aria-hidden="true">
-                        {currentWord.emoji}
-                      </span>
-                    )}
+                    <div className="mb-4">
+                      <WordPicture word={currentWord} className="w-44 h-44 sm:w-48 sm:h-48" />
+                    </div>
 
                     <h2 className="font-heading text-[40px] sm:text-5xl leading-tight font-bold text-ink mb-3">
                       {currentWord.word}

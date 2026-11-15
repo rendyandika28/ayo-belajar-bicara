@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { asset } from "@/lib/asset";
 import Link from "next/link";
 import StarCounter from "@/components/ui/StarCounter";
 import MuteButton from "@/components/MuteButton";
@@ -22,7 +23,7 @@ function GameCard({ game: item, eager }: { game: Game; eager?: boolean }) {
       <div className="aspect-square w-full rounded-2xl bg-accent-soft overflow-hidden">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={`/images/games/${item.slug}.webp`}
+          src={asset(`/images/games/${item.slug}.webp`)}
           alt=""
           loading={eager ? "eager" : "lazy"}
           decoding="async"

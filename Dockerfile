@@ -10,6 +10,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install --no-audit --no-fund --prefer-offline --legacy-peer-deps
 COPY . .
+ARG NEXT_PUBLIC_ASSET_BASE
+ENV NEXT_PUBLIC_ASSET_BASE=$NEXT_PUBLIC_ASSET_BASE
 RUN npm run build
 
 FROM node:22-alpine AS runner

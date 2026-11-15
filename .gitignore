@@ -34,3 +34,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# generated assets live in Cloudflare R2 (npm run upload:assets)
+/public/audio/
+/public/images/words/
+/public/images/ui/
+/public/images/games/
+.assets-uploaded.json

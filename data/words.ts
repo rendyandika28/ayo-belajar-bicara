@@ -153,19 +153,20 @@ export const words: Word[] = [
   { id: "prl-10", emoji: "🧹", word: "sapu", syllables: ["sa", "pu"], category: "peralatan", difficulty: 1 },
 ];
 
+// image reuses a word picture (public/images/words) as the category icon
 export const categories = [
-  { id: "semua", label: "Semua", emoji: "📚" },
-  { id: "keluarga", label: "Keluarga", emoji: "👨‍👩‍👧‍👦" },
-  { id: "hewan", label: "Hewan", emoji: "🐾" },
-  { id: "buah", label: "Buah", emoji: "🍎" },
-  { id: "makanan", label: "Makanan", emoji: "🍚" },
-  { id: "benda", label: "Benda", emoji: "🎒" },
-  { id: "aktivitas", label: "Aktivitas", emoji: "🏃" },
-  { id: "warna", label: "Warna", emoji: "🎨" },
-  { id: "angka", label: "Angka", emoji: "🔢" },
-  { id: "tubuh", label: "Tubuh", emoji: "🦷" },
-  { id: "alam", label: "Alam", emoji: "🌳" },
-  { id: "peralatan", label: "Peralatan", emoji: "🏠" },
+  { id: "semua", label: "Semua", emoji: "📚", image: "/images/words/bnd-3.webp" },
+  { id: "keluarga", label: "Keluarga", emoji: "👨‍👩‍👧‍👦", image: "/images/words/kel-9.webp" },
+  { id: "hewan", label: "Hewan", emoji: "🐾", image: "/images/words/hew-1.webp" },
+  { id: "buah", label: "Buah", emoji: "🍎", image: "/images/words/bua-1.webp" },
+  { id: "makanan", label: "Makanan", emoji: "🍚", image: "/images/words/mkn-1.webp" },
+  { id: "benda", label: "Benda", emoji: "🎒", image: "/images/words/bnd-1.webp" },
+  { id: "aktivitas", label: "Aktivitas", emoji: "🏃", image: "/images/words/akt-6.webp" },
+  { id: "warna", label: "Warna", emoji: "🎨", image: "/images/words/war-9.webp" },
+  { id: "angka", label: "Angka", emoji: "🔢", image: "/images/words/ang-3.webp" },
+  { id: "tubuh", label: "Tubuh", emoji: "🦷", image: "/images/words/tub-5.webp" },
+  { id: "alam", label: "Alam", emoji: "🌳", image: "/images/words/alm-7.webp" },
+  { id: "peralatan", label: "Peralatan", emoji: "🏠", image: "/images/words/prl-8.webp" },
 ] as const;
 
 export const simpleSentences = [

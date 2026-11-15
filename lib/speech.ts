@@ -1,6 +1,9 @@
 "use client";
 
 import { useAppStore } from "@/store/useAppStore";
+import { asset } from "@/lib/asset";
+import { audioKey } from "@/lib/audioKey";
+import audioManifest from "@/lib/audioManifest.json";
 
 let cachedVoice: SpeechSynthesisVoice | null = null;
 let voicesReady = false;
@@ -73,16 +76,47 @@ export function initSpeech() {
   } catch {}
 }
 
+// Recorded natural voice (npm run gen:audio) for texts in the manifest; browser TTS otherwise.
+const recorded = new Set<string>(audioManifest as string[]);
+let currentAudio: HTMLAudioElement | null = null;
+
+function stopRecorded() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+}
+
+function playRecorded(text: string, onEnd?: () => void): boolean {
+  const key = audioKey(text);
+  if (!recorded.has(key) || typeof Audio === "undefined") return false;
+  stopRecorded();
+  window.speechSynthesis?.cancel();
+  const audio = new Audio(asset(`/audio/${key}.mp3`));
+  currentAudio = audio;
+  if (onEnd) audio.onended = onEnd;
+  audio.play().catch(() => {
+    // Autoplay blocked or file missing: fall back to the browser voice.
+    if (currentAudio === audio) currentAudio = null;
+    if (window.speechSynthesis) doSpeak(text, { onEnd });
+  });
+  return true;
+}
+
 export function speak(
   text: string,
   options?: { rate?: number; pitch?: number; lang?: string; onEnd?: () => void }
 ) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
+  if (typeof window === "undefined") return;
   try {
     if (useAppStore.getState().isMuted) return;
   } catch {
     return;
   }
+
+  if (playRecorded(text, options?.onEnd)) return;
+  if (!window.speechSynthesis) return;
+  stopRecorded();
 
   if (voicesReady) {
     doSpeak(text, options);

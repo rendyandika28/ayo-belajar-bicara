@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { words, Word } from "@/data/words";
+import { TOTAL_QUESTIONS, generateQuestions, readRecent, rememberTargets } from "@/lib/tebakGambar";
 import { useAppStore } from "@/store/useAppStore";
 import { speak } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
@@ -10,59 +11,7 @@ import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 import GameTutorial from "@/components/GameTutorial";
-
-const TOTAL_QUESTIONS = 10;
-
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
-function pickQuestionOptions(allWords: Word[], target: Word): Word[] {
-  // Get distractors from the same category first
-  const sameCategory = allWords.filter(
-    (w) => w.category === target.category && w.id !== target.id
-  );
-  const shuffledSame = shuffleArray(sameCategory);
-
-  let distractors: Word[] = [];
-
-  if (shuffledSame.length >= 3) {
-    distractors = shuffledSame.slice(0, 3);
-  } else {
-    // Not enough in same category, fill from others
-    distractors = [...shuffledSame];
-    const others = allWords.filter(
-      (w) => w.id !== target.id && w.category !== target.category
-    );
-    const shuffledOthers = shuffleArray(others);
-    const remaining = 3 - distractors.length;
-    distractors = [...distractors, ...shuffledOthers.slice(0, remaining)];
-  }
-
-  // Combine target with distractors and shuffle
-  return shuffleArray([target, ...distractors]);
-}
-
-function generateQuestions(allWords: Word[]): { target: Word; options: Word[] }[] {
-  const shuffled = shuffleArray(allWords);
-  const selected = shuffled.slice(0, TOTAL_QUESTIONS);
-
-  // If we don't have enough words, allow repeats
-  while (selected.length < TOTAL_QUESTIONS) {
-    const extra = shuffleArray(allWords);
-    selected.push(...extra.slice(0, TOTAL_QUESTIONS - selected.length));
-  }
-
-  return selected.map((target) => ({
-    target,
-    options: pickQuestionOptions(allWords, target),
-  }));
-}
+import WordPicture from "@/components/WordPicture";
 
 type GamePhase = "playing" | "finished";
 
@@ -71,7 +20,8 @@ export default function TebakGambarPage() {
 
   useEffect(() => { recordGamePlay("tebak-gambar"); }, [recordGamePlay]);
 
-  const allWords = useMemo(() => [...words, ...customWords], [customWords]);
+  // Only words with a picture: built-in words all have AI art (public/images/words), custom ones need a photo.
+  const allWords = useMemo(() => [...words, ...customWords.filter((w) => w.image)], [customWords]);
 
   const [gamePhase, setGamePhase] = useState<GamePhase>("playing");
   const [questions, setQuestions] = useState<{ target: Word; options: Word[] }[]>([]);
@@ -85,7 +35,11 @@ export default function TebakGambarPage() {
 
   // Initialize questions
   useEffect(() => {
-    setQuestions(generateQuestions(allWords));
+    {
+      const qs = generateQuestions(allWords, readRecent());
+      rememberTargets(qs.map((q) => q.target.id));
+      setQuestions(qs);
+    }
   }, [allWords]);
 
   const currentQuestion = questions[currentIndex];
@@ -155,7 +109,11 @@ export default function TebakGambarPage() {
   );
 
   const restartGame = useCallback(() => {
-    setQuestions(generateQuestions(allWords));
+    {
+      const qs = generateQuestions(allWords, readRecent());
+      rememberTargets(qs.map((q) => q.target.id));
+      setQuestions(qs);
+    }
     setCurrentIndex(0);
     setScore(0);
     setSelectedId(null);
@@ -224,8 +182,8 @@ export default function TebakGambarPage() {
       <GameTutorial
         gameKey="tebak-gambar"
         steps={[
-          { emoji: "\ud83d\udc42", text: "Dengarkan suara kata yang diputar, lalu perhatikan baik-baik." },
-          { emoji: "\ud83c\udfaf", text: "Pilih gambar yang sesuai dengan kata yang kamu dengar!" },
+          { image: "/images/ui/listen.webp", text: "Dengarkan suara kata yang diputar, lalu perhatikan baik-baik." },
+          { image: "/images/ui/choose.webp", text: "Pilih gambar yang sesuai dengan kata yang kamu dengar!" },
         ]}
       />
       <ConfettiEffect show={showConfetti} />
@@ -309,9 +267,7 @@ export default function TebakGambarPage() {
                       !isLocked ? "hover:bg-accent-soft active:bg-line" : ""
                     }`}
                   >
-                    <span className="text-5xl sm:text-6xl leading-none" aria-hidden="true">
-                      {option.emoji}
-                    </span>
+                    <WordPicture word={option} className="w-20 h-20 sm:w-24 sm:h-24" emojiClassName="text-5xl sm:text-6xl" />
                     <span className="font-heading text-xl font-bold text-ink">
                       {option.word}
                     </span>

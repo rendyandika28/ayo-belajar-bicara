@@ -175,7 +175,7 @@ describe("speech", () => {
       (globalThis.speechSynthesis.getVoices as ReturnType<typeof vi.fn>).mockReturnValue(voices);
 
       const { speakSyllable } = await import("@/lib/speech");
-      speakSyllable("ma");
+      speakSyllable("zzq"); // no recording, so the browser voice is used
 
       const utterance = (globalThis.speechSynthesis.speak as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
       expect(utterance.rate).toBe(0.6);
@@ -238,5 +238,33 @@ describe("speech", () => {
 
       delete (globalThis as unknown as Record<string, unknown>).webkitSpeechRecognition;
     });
+  });
+});
+
+describe("recorded voice", () => {
+  it("plays the recorded mp3 for texts in the manifest instead of browser TTS", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/audioManifest.json", () => ({ default: ["kucing"] }));
+    const play = vi.fn(() => Promise.resolve());
+    const created: string[] = [];
+    vi.stubGlobal("Audio", vi.fn(function (this: { play: typeof play; pause: () => void }, src: string) {
+      created.push(src);
+      this.play = play;
+      this.pause = () => {};
+    }));
+    Object.defineProperty(globalThis, "speechSynthesis", {
+      value: { speak: vi.fn(), cancel: vi.fn(), getVoices: vi.fn(() => []), speaking: false, pending: false },
+      writable: true,
+      configurable: true,
+    });
+
+    const { speak } = await import("@/lib/speech");
+    speak("Kucing");
+
+    expect(created).toEqual(["/audio/kucing.mp3"]);
+    expect(play).toHaveBeenCalled();
+    expect(globalThis.speechSynthesis.speak).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+    vi.doUnmock("@/lib/audioManifest.json");
   });
 });

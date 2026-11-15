@@ -1,4 +1,4 @@
-const CACHE_NAME = "web-adek-v1";
+const CACHE_NAME = "web-adek-v2";
 
 const APP_SHELL = [
   "/",
@@ -71,6 +71,25 @@ self.addEventListener("fetch", (event) => {
           fetch(request).then((response) => {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            return response;
+          })
+      )
+    );
+    return;
+  }
+
+  // Generated assets on Cloudflare R2 (pictures, recorded voice): immutable, cache-first
+  // so pictures and sounds already seen keep working offline. Skip partial (206) media responses.
+  if (url.hostname.endsWith(".r2.dev")) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            if (response.status !== 206 && (response.ok || response.type === "opaque")) {
+              const clone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            }
             return response;
           })
       )
