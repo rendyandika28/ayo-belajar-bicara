@@ -164,6 +164,7 @@ type SpeechRecognitionEvent = {
         confidence: number;
       };
       isFinal: boolean;
+      length: number;
     };
     length: number;
   };
@@ -177,6 +178,7 @@ export interface SpeechRecognitionInstance {
   lang: string;
   continuous: boolean;
   interimResults: boolean;
+  maxAlternatives: number;
   onresult: ((event: SpeechRecognitionEvent) => void) | null;
   onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
   onend: (() => void) | null;
@@ -198,6 +200,8 @@ export function createSpeechRecognition(): SpeechRecognitionInstance | null {
   recognition.lang = "id-ID";
   recognition.continuous = false;
   recognition.interimResults = true;
+  // The right word is often a lower-ranked guess for child speech; check several.
+  recognition.maxAlternatives = 5;
 
   return recognition;
 }

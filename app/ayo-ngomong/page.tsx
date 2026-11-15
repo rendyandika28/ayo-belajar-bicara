@@ -11,11 +11,12 @@ import {
   SpeechRecognitionInstance,
 } from "@/lib/speech";
 import { playCorrect, playPop, playApplause } from "@/lib/sounds";
-import { isMatch } from "@/lib/fuzzyMatch";
+import { judge } from "@/lib/fuzzyMatch";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
 import GameTutorial from "@/components/GameTutorial";
+import WordPicture from "@/components/WordPicture";
 
 const WORDS_PER_SESSION = 8;
 
@@ -28,7 +29,7 @@ export default function AyoNgomongPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [feedback, setFeedback] = useState<"match" | "close" | "no" | "no_speech" | null>(
+  const [feedback, setFeedback] = useState<"match" | "close" | "no" | "no_speech" | "blocked" | null>(
     null
   );
   const [showConfetti, setShowConfetti] = useState(false);
@@ -155,55 +156,51 @@ export default function AyoNgomongPage() {
     recognitionRef.current = recognition;
 
     let hasResult = false;
+    let settled = false; // a verdict or error already shown
 
     recognition.onresult = (event) => {
-      if (recognitionRef.current !== recognition) return; // aborted/stale instance
-      let interimTranscript = "";
-      let finalTranscript = "";
-
+      if (recognitionRef.current !== recognition || !currentWord) return; // aborted/stale instance
+      let top = "";
+      let isFinal = false;
+      const alternatives: string[] = [];
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += result[0].transcript;
-          hasResult = true;
-        } else {
-          interimTranscript += result[0].transcript;
-          hasResult = true;
-        }
+        hasResult = true;
+        top += result[0].transcript;
+        if (result.isFinal) isFinal = true;
+        for (let j = 1; j < result.length; j++) alternatives.push(result[j].transcript);
       }
 
-      // Show interim results in real-time
-      if (interimTranscript) {
-        setTranscript(interimTranscript);
-      }
-
-      // Process final result
-      if (finalTranscript && currentWord) {
-        setTranscript(finalTranscript);
-        const matchResult = isMatch(finalTranscript, currentWord.word);
-
-        if (matchResult === "match") {
-          handleMatch();
-        } else if (matchResult === "close") {
-          setFeedback("close");
-          playPop();
-        } else {
-          setFeedback("no");
-        }
+      const { result, heard } = judge(top, alternatives, currentWord.word, isFinal);
+      setTranscript(heard); // show the guess that was judged, not always the top one
+      if (result === "match") {
+        settled = true;
+        recognition.abort();
+        recognitionRef.current = null;
+        setIsListening(false);
+        handleMatch();
+      } else if (result) {
+        settled = true;
+        setFeedback(result);
+        if (result === "close") playPop();
       }
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event) => {
       if (recognitionRef.current !== recognition) return; // aborted/stale instance
       setIsListening(false);
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        settled = true;
+        setFeedback("blocked");
+      }
     };
 
     recognition.onend = () => {
       if (recognitionRef.current !== recognition) return; // aborted/stale instance
       setIsListening(false);
-      if (!hasResult) {
-        setFeedback("no_speech");
-      }
+      if (settled) return;
+      // Ended with nothing, or with only unfinished guesses that never matched.
+      setFeedback(hasResult ? "no" : "no_speech");
     };
 
     try {
@@ -285,14 +282,15 @@ export default function AyoNgomongPage() {
       <GameTutorial
         gameKey="ayo-ngomong"
         steps={[
-          { emoji: "\ud83c\udfa4", text: "Dengarkan kata yang muncul di layar, lalu tekan tombol mikrofon." },
-          { emoji: "\ud83d\udde3\ufe0f", text: "Ucapkan kata dengan jelas. Aplikasi akan menilai ucapanmu!" },
+          { image: "/images/ui/listen.webp", text: "Dengarkan kata yang muncul di layar, lalu tekan tombol mikrofon." },
+          { image: "/images/words/akt-12.webp", text: "Ucapkan kata dengan jelas. Aplikasi akan menilai ucapanmu!" },
         ]}
       />
 
-      <div className="max-w-md mx-auto">
+      {/* Fits one screen (dvh minus GameShell header/padding): no scrolling while playing. */}
+      <div className="max-w-md mx-auto flex flex-col gap-3 h-[calc(100dvh-13rem)] sm:h-[calc(100dvh-11rem)] min-h-[460px] max-h-[760px]">
         {/* Progress bar */}
-        <div className="flex items-center gap-3 mb-4">
+        <div className="shrink-0 flex items-center gap-3">
           <div className="flex-1 h-2.5 bg-line rounded-full overflow-hidden">
             <motion.div
               className="h-full bg-accent rounded-full origin-left"
@@ -306,11 +304,11 @@ export default function AyoNgomongPage() {
           </p>
         </div>
 
-        {/* Word Card */}
+        {/* Word Card: picture takes the leftover height */}
         <AnimatePresence mode="wait">
           <motion.div
             key={currentWord.id}
-            className={`bg-surface rounded-3xl border-2 p-5 sm:p-8 text-center mb-5 transition-colors ${
+            className={`flex-1 min-h-0 bg-surface rounded-3xl border-2 p-4 sm:p-5 text-center flex flex-col items-center gap-2 transition-colors ${
               feedback === "match" ? "border-good-strong" : feedback ? "border-warn" : "border-line"
             }`}
             initial={{ opacity: 0 }}
@@ -318,23 +316,23 @@ export default function AyoNgomongPage() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
           >
-            <span className="text-7xl sm:text-8xl block mb-3" aria-hidden="true">
-              {currentWord.emoji}
-            </span>
-            <h2 className="font-heading text-4xl sm:text-5xl font-bold text-ink">
+            <div className="flex-1 min-h-0 w-full flex items-center justify-center">
+              <WordPicture word={currentWord} className="h-full max-h-56 aspect-square" />
+            </div>
+            <h2 className="shrink-0 font-heading text-3xl sm:text-4xl font-bold text-ink">
               {currentWord.word.toUpperCase()}
             </h2>
 
             {/* Transcript + feedback */}
-            <div className="min-h-[32px] mt-3" aria-live="polite">
+            <div className="shrink-0 min-h-[32px]" aria-live="polite">
               {transcript && (
-                <p className="font-body text-xl text-ink-muted">
+                <p className="font-body text-lg text-ink-muted">
                   Kamu bilang:{" "}
                   <span className="font-heading font-bold text-ink">{transcript}</span>
                 </p>
               )}
               {feedback === "match" && (
-                <p className="font-heading text-2xl font-bold text-good-strong inline-flex items-center gap-2 mt-1">
+                <p className="font-heading text-xl font-bold text-good-strong inline-flex items-center gap-2 mt-1">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m5 12 5 5 9-10" />
               </svg>
@@ -342,89 +340,80 @@ export default function AyoNgomongPage() {
                 </p>
               )}
               {feedback === "close" && (
-                <p className="font-heading text-xl font-bold text-ink mt-1">Bagus! Coba lagi ya!</p>
+                <p className="font-heading text-lg font-bold text-ink mt-1">Bagus! Coba lagi ya!</p>
               )}
               {feedback === "no" && (
-                <p className="font-heading text-xl font-bold text-ink mt-1">Coba lebih keras ya!</p>
+                <p className="font-heading text-lg font-bold text-ink mt-1">Coba lebih keras ya!</p>
+              )}
+              {feedback === "blocked" && (
+                <p className="font-heading text-lg font-bold text-ink mt-1">Mikrofon belum diizinkan. Izinkan di pengaturan browser.</p>
               )}
               {feedback === "no_speech" && (
-                <p className="font-heading text-xl font-bold text-ink mt-1">Suara tidak terdengar, coba lagi!</p>
+                <p className="font-heading text-lg font-bold text-ink mt-1">Suara tidak terdengar, coba lagi!</p>
               )}
             </div>
+
+            {/* Parent override: mic missed a word the child did say */}
+            {supported && (feedback === "close" || feedback === "no" || feedback === "no_speech" || feedback === "blocked") && (
+              <button
+                type="button"
+                onClick={handleManualSuccess}
+                className="shrink-0 min-h-[44px] px-4 rounded-full font-body text-base text-ink-muted underline underline-offset-4 transition-colors hover:text-ink"
+              >
+                Tandai berhasil
+              </button>
+            )}
           </motion.div>
         </AnimatePresence>
 
-        {/* Main action: mic (or manual fallback) */}
-        {supported ? (
-          <div className="flex flex-col items-center gap-2 mb-5">
-            <button
-              type="button"
-              onClick={startListening}
-              disabled={feedback === "match"}
-              className={`w-24 h-24 rounded-full flex items-center justify-center text-on-accent transition-colors ${
-                isListening
-                  ? "bg-ink animate-pulse-mic motion-reduce:animate-none"
-                  : "bg-accent-strong hover:bg-ink active:bg-ink"
-              }`}
-              aria-label={
-                isListening ? "Berhenti mendengar" : "Mulai bicara"
-              }
-            >
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="9" y="3" width="6" height="12" rx="3" />
-                <path d="M5 11a7 7 0 0 0 14 0" />
-                <path d="M12 18v3" />
-              </svg>
-            </button>
-            <p className="font-heading text-lg text-ink-muted">
-              {isListening ? "Sedang mendengarkan…" : "Bicara"}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center gap-3 mb-5">
-            <p className="font-body text-base text-ink-muted text-center">
-              Fitur ini memerlukan browser Chrome atau Edge
-            </p>
-            <BigButton tone="good" onClick={handleManualSuccess} disabled={feedback === "match"}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="m5 12 5 5 9-10" />
-              </svg>
-              Berhasil
-            </BigButton>
-          </div>
-        )}
-
-        {/* Secondary actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <BigButton tone="quiet" onClick={handleReplay}>
+        {/* One action row: listen · mic (main) · skip */}
+        <div className="shrink-0 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <BigButton tone="quiet" onClick={handleReplay} aria-label="Dengar lagi" className="px-3">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M11 5 6 9H3v6h3l5 4z" />
               <path d="M15.5 8.5a5 5 0 0 1 0 7" />
               <path d="M18.5 5.5a9 9 0 0 1 0 13" />
             </svg>
-            Dengar
+            <span className="hidden sm:inline">Dengar</span>
           </BigButton>
-          <BigButton tone="quiet" onClick={advanceToNext}>
-            Lewati
+
+          {supported ? (
+            <button
+              type="button"
+              onClick={startListening}
+              disabled={feedback === "match"}
+              className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-on-accent transition-colors ${
+                isListening
+                  ? "bg-ink animate-pulse-mic motion-reduce:animate-none"
+                  : "bg-accent-strong hover:bg-ink active:bg-ink"
+              }`}
+              aria-label={isListening ? "Berhenti mendengar" : "Mulai bicara"}
+            >
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0" />
+                <path d="M12 18v3" />
+              </svg>
+            </button>
+          ) : (
+            <BigButton tone="good" onClick={handleManualSuccess} disabled={feedback === "match"} aria-label="Berhasil">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+            </BigButton>
+          )}
+
+          <BigButton tone="quiet" onClick={advanceToNext} aria-label="Lewati" className="px-3">
+            <span className="hidden sm:inline">Lewati</span>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="m6 5 7 7-7 7" />
               <path d="M17 5v14" />
             </svg>
           </BigButton>
         </div>
-
-        {/* Parent override: mic missed a word the child did say */}
-        {supported && (feedback === "close" || feedback === "no" || feedback === "no_speech") && (
-          <div className="flex justify-center mt-4">
-            <button
-              type="button"
-              onClick={handleManualSuccess}
-              className="min-h-[48px] px-4 rounded-full font-body text-base text-ink-muted underline underline-offset-4 transition-colors hover:text-ink"
-            >
-              Tandai berhasil
-            </button>
-          </div>
-        )}
+        <p className="shrink-0 -mt-1 font-heading text-base text-ink-muted text-center">
+          {!supported ? "Mikrofon butuh Chrome atau Edge. Tekan centang jika anak berhasil." : isListening ? "Sedang mendengarkan…" : "Tekan mikrofon, lalu bicara"}
+        </p>
       </div>
 
       {/* Confetti */}
