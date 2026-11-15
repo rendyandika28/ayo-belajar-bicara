@@ -301,3 +301,65 @@ describe("speakSyllable with word context", () => {
     expect(created).toEqual(["/audio/ja.mp3"]);
   });
 });
+
+describe("recorded audio superseded", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.doUnmock("@/lib/audioManifest.json"); });
+
+  it("does not fall back to browser voice when a newer clip replaced it", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/audioManifest.json", () => ({ default: ["kucing"] }));
+    const rejects: Array<(e: Error) => void> = [];
+    vi.stubGlobal("Audio", vi.fn(function (this: { play: () => Promise<void>; pause: () => void }) {
+      this.play = () => new Promise<void>((_, reject) => { rejects.push(reject); });
+      this.pause = () => {};
+    }));
+    const synthSpeak = vi.fn();
+    vi.stubGlobal("speechSynthesis", { speak: synthSpeak, cancel: vi.fn(), getVoices: () => [] });
+    const { useAppStore } = await import("@/store/useAppStore");
+    useAppStore.setState({ isMuted: false } as never);
+    const { speak } = await import("@/lib/speech");
+    speak("kucing");
+    speak("kucing"); // e.g. StrictMode effect running twice
+    rejects[0](new Error("AbortError"));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(synthSpeak).not.toHaveBeenCalled();
+  });
+});
+
+describe("partFills", () => {
+  it("fills parts in order, partially inside the current one", async () => {
+    const { partFills } = await import("@/lib/speech");
+    expect(partFills(["ab", "cd"], 0)).toEqual([0, 0]);
+    expect(partFills(["ab", "cd"], 0.25)).toEqual([0.5, 0]);
+    expect(partFills(["ab", "cd"], 0.75)).toEqual([1, 0.5]);
+    expect(partFills(["ab", "cd"], 1)).toEqual([1, 1]);
+  });
+});
+
+describe("playWithProgress", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.doUnmock("@/lib/audioManifest.json"); });
+
+  it("calls onEnd when the clip is replaced or stopped, so highlights clear", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/audioManifest.json", () => ({ default: ["doa", "kucing"] }));
+    vi.stubGlobal("Audio", vi.fn(function (this: { play: () => Promise<void>; pause: () => void }) {
+      this.play = () => new Promise<void>(() => {});
+      this.pause = () => {};
+    }));
+    vi.stubGlobal("speechSynthesis", { speak: vi.fn(), cancel: vi.fn(), getVoices: () => [] });
+    const { useAppStore } = await import("@/store/useAppStore");
+    useAppStore.setState({ isMuted: false } as never);
+    const { playWithProgress, speak, stopAudio } = await import("@/lib/speech");
+
+    const onEnd = vi.fn();
+    playWithProgress("doa", () => {}, onEnd);
+    speak("kucing"); // another sound replaces it
+    expect(onEnd).toHaveBeenCalledTimes(1);
+
+    const onEnd2 = vi.fn();
+    playWithProgress("doa", () => {}, onEnd2);
+    stopAudio();
+    stopAudio();
+    expect(onEnd2).toHaveBeenCalledTimes(1);
+  });
+});

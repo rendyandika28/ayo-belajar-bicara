@@ -37,8 +37,8 @@ describe("hijaiyahLetters", () => {
 });
 
 describe("dailyDoas", () => {
-  it("has exactly 10 doas", () => {
-    expect(dailyDoas).toHaveLength(10);
+  it("has 20 doas", () => {
+    expect(dailyDoas).toHaveLength(20);
   });
 
   it("has no duplicate IDs", () => {
@@ -79,8 +79,8 @@ describe("dailyDoas", () => {
 });
 
 describe("asmaulHusna", () => {
-  it("has exactly 10 entries", () => {
-    expect(asmaulHusna).toHaveLength(10);
+  it("has all 99 names", () => {
+    expect(asmaulHusna).toHaveLength(99);
   });
 
   it("has no duplicate IDs", () => {
@@ -88,7 +88,7 @@ describe("asmaulHusna", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it("has sequential numbers from 1 to 10", () => {
+  it("has sequential numbers from 1 to 99", () => {
     asmaulHusna.forEach((a, i) => {
       expect(a.number).toBe(i + 1);
     });

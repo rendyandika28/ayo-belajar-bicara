@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { asmaulHusna } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
-import { speak } from "@/lib/speech";
+import { speakAsma } from "@/lib/speech";
 import { playPop, playCelebration } from "@/lib/sounds";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
@@ -14,133 +14,62 @@ import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 export default function AsmaulHusnaPage() {
   const { markAsmaulHusnaLearned, addStar } = useAppStore();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(0);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [showReward, setShowReward] = useState(false);
   const [hasShownReward, setHasShownReward] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const learnedInSession = useRef<Set<string>>(new Set());
-
-  const currentItem = asmaulHusna[currentIndex];
   const total = asmaulHusna.length;
 
-  // Mark as learned and speak when card appears
-  useEffect(() => {
-    if (!currentItem) return;
-
-    // Speak the latin name
-    speak(currentItem.latin, { rate: 0.6 });
-
-    // Mark as learned and give star (only once per session)
-    if (!learnedInSession.current.has(currentItem.id)) {
-      learnedInSession.current.add(currentItem.id);
-      if (markAsmaulHusnaLearned(currentItem.id)) addStar(1);
-    }
-  }, [currentItem, markAsmaulHusnaLearned, addStar]);
-
-  // Check if all viewed - show reward
-  useEffect(() => {
-    if (learnedInSession.current.size === total && !hasShownReward) {
+  // Tap a card: hear the name; first tap this session marks it learned (+1 star if new).
+  const handleTap = useCallback((item: (typeof asmaulHusna)[number]) => {
+    playPop();
+    setActiveId(item.id);
+    speakAsma(item);
+    if (learnedInSession.current.has(item.id)) return;
+    learnedInSession.current.add(item.id);
+    const isNew = markAsmaulHusnaLearned(item.id);
+    if (isNew) addStar(1);
+    // Reward the moment the last name is learned, across all visits (store keeps progress).
+    if (isNew && useAppStore.getState().asmaulHusnaLearned.length >= total && !hasShownReward) {
       setHasShownReward(true);
       setShowReward(true);
       setShowConfetti(true);
       playCelebration();
       setTimeout(() => setShowConfetti(false), 3500);
     }
-  }, [currentIndex, total, hasShownReward]);
-
-  const goNext = useCallback(() => {
-    if (currentIndex < total - 1) {
-      setDirection(1);
-      setCurrentIndex((prev) => prev + 1);
-      playPop();
-    }
-  }, [currentIndex, total]);
-
-  const goPrev = useCallback(() => {
-    if (currentIndex > 0) {
-      setDirection(-1);
-      setCurrentIndex((prev) => prev - 1);
-      playPop();
-    }
-  }, [currentIndex]);
-
-  const handleListen = useCallback(() => {
-    if (!currentItem) return;
-    speak(currentItem.latin, { rate: 0.6 });
-  }, [currentItem]);
-
-  const slideVariants = {
-    enter: (dir: number) => ({
-      x: dir > 0 ? 40 : -40,
-      opacity: 0,
-    }),
-    center: {
-      x: 0,
-      opacity: 1,
-    },
-    exit: (dir: number) => ({
-      x: dir > 0 ? -40 : 40,
-      opacity: 0,
-    }),
-  };
+  }, [markAsmaulHusnaLearned, addStar, total, hasShownReward]);
 
   return (
     <GameShell title="Asmaul Husna" backHref="/islami" backLabel="Kembali ke menu Islami">
       <ConfettiEffect show={showConfetti} />
 
-      {/* Progress indicator */}
-      <div className="text-center mb-4">
-        <p className="font-body text-base text-ink-muted">{currentIndex + 1}/{total}</p>
-        <div className="w-full max-w-xs mx-auto h-2 bg-line rounded-full overflow-hidden mt-1">
-          <motion.div
-            className="h-full bg-good-strong rounded-full origin-left"
-            initial={false}
-            animate={{ scaleX: (currentIndex + 1) / total }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-          />
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center">
-        <div className="relative w-full max-w-sm" style={{ minHeight: 340 }}>
-          <AnimatePresence mode="wait" custom={direction}>
-            {currentItem && (
-              <motion.div
-                key={currentItem.id}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: "tween", duration: 0.25 }}
-                className="absolute inset-0 bg-surface rounded-3xl border border-line p-6 sm:p-8 flex flex-col items-center justify-center"
+      <p className="text-center font-body text-base text-ink-muted mb-3">Ketuk nama untuk mendengar</p>
+      <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {asmaulHusna.map((item) => {
+          const active = item.id === activeId;
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => handleTap(item)}
+                aria-pressed={active}
+                aria-label={`${item.number}. ${item.latin}, ${item.meaning}`}
+                className={`relative w-full h-full rounded-3xl border-2 p-3 pt-4 flex flex-col items-center gap-1 text-center transition-colors ${
+                  active ? "bg-accent-soft border-accent-strong" : "bg-surface border-line hover:bg-accent-soft active:bg-line"
+                }`}
               >
-                <div className="w-11 h-11 rounded-full bg-good-strong text-on-accent flex items-center justify-center font-heading text-lg font-bold mb-4">
-                  {currentItem.number}
-                </div>
-                <p className="font-arabic text-5xl text-ink mb-4 leading-relaxed" dir="rtl" lang="ar">
-                  {currentItem.arabic}
-                </p>
-                <h2 className="font-heading text-3xl font-bold text-ink mb-2">{currentItem.latin}</h2>
-                <p className="text-xl text-ink-muted font-body text-center">{currentItem.meaning}</p>
-                <BigButton onClick={handleListen} className="mt-5">
-                  <Icon name="speaker" /> Dengar
-                </BigButton>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 w-full max-w-sm mt-5">
-          <BigButton tone="quiet" onClick={goPrev} disabled={currentIndex === 0} aria-label="Sebelumnya">
-            <Icon name="prev" size={32} />
-          </BigButton>
-          <BigButton tone="quiet" onClick={goNext} disabled={currentIndex >= total - 1} aria-label="Selanjutnya">
-            <Icon name="next" size={32} />
-          </BigButton>
-        </div>
-      </div>
+                <span className="absolute top-2 left-2 w-7 h-7 rounded-full bg-good-strong text-on-accent flex items-center justify-center font-heading text-xs font-bold">
+                  {item.number}
+                </span>
+                <span className="font-arabic text-3xl sm:text-4xl text-ink leading-relaxed" dir="rtl" lang="ar">{item.arabic}</span>
+                <span className="font-heading text-base sm:text-lg font-bold text-ink leading-tight" style={{ overflowWrap: "break-word", minWidth: 0 }}>{item.latin}</span>
+                <span className="font-body text-sm text-ink-muted leading-snug">{item.meaning}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
 
       {/* Reward overlay */}
       <AnimatePresence>
@@ -157,7 +86,7 @@ export default function AsmaulHusnaPage() {
                 <Icon name="star" size={40} />
               </span>
               <h2 className="font-heading text-2xl font-bold text-ink">Subhanallah! Kamu Hebat!</h2>
-              <p className="font-body text-lg text-ink-muted">Kamu sudah belajar semua 10 Asmaul Husna!</p>
+              <p className="font-body text-lg text-ink-muted">Kamu sudah belajar semua {total} Asmaul Husna!</p>
               <div className="flex flex-col gap-3 w-full mt-2">
                 <BigButton onClick={() => setShowReward(false)} className="w-full">
                   Lanjutkan Belajar

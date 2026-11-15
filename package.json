@@ -13,7 +13,8 @@
     "gen:words": "node scripts/generate-word-images.mjs",
     "gen:ui": "node scripts/generate-word-images.mjs --subjects scripts/ui-subjects.json --out public/images/ui",
     "gen:audio": "node scripts/generate-audio.mjs",
-    "upload:assets": "node scripts/upload-assets.mjs"
+    "upload:assets": "node scripts/upload-assets.mjs",
+    "gen:doa": "node scripts/generate-word-images.mjs --subjects scripts/doa-subjects.json --out public/images/doa"
   },
   "dependencies": {
     "framer-motion": "^12.34.1",

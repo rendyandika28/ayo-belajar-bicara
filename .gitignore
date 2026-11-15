@@ -40,4 +40,5 @@ next-env.d.ts
 /public/images/words/
 /public/images/ui/
 /public/images/games/
+/public/images/doa/
 .assets-uploaded.json

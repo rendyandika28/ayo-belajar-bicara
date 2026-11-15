@@ -4,17 +4,25 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dailyDoas } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
-import { speak, createSpeechRecognition, isSpeechRecognitionSupported } from "@/lib/speech";
+import { speak, playWithProgress, partFills, stopAudio, createSpeechRecognition, isSpeechRecognitionSupported } from "@/lib/speech";
 import { playPop, playApplause } from "@/lib/sounds";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
 import Icon from "@/components/ui/Icon";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
+import AssetImage from "@/components/ui/AssetImage";
 
 export default function DoaHarianPage() {
   const { doasAttempted, markDoaAttempted, addStar } = useAppStore();
   const [selectedDoaId, setSelectedDoaId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const shownDoas = q
+    ? dailyDoas.filter((d) => `${d.title} ${d.situation} ${d.latin}`.toLowerCase().includes(q))
+    : dailyDoas;
   const [isListening, setIsListening] = useState(false);
+  // Playback progress of "Dengar" (0..1, -1 = not playing); drives the live highlight.
+  const [progress, setProgress] = useState(-1);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const recognitionRef = useRef<ReturnType<typeof createSpeechRecognition>>(null);
@@ -27,7 +35,9 @@ export default function DoaHarianPage() {
 
   const handleSelectDoa = useCallback((doaId: string) => {
     playPop();
+    stopAudio();
     setSelectedDoaId(doaId);
+    setProgress(-1);
     setShowSuccess(false);
     successRef.current = false;
     setIsListening(false);
@@ -35,7 +45,9 @@ export default function DoaHarianPage() {
 
   const handleBack = useCallback(() => {
     playPop();
+    stopAudio();
     setSelectedDoaId(null);
+    setProgress(-1);
     setShowSuccess(false);
     successRef.current = false;
     setIsListening(false);
@@ -46,7 +58,12 @@ export default function DoaHarianPage() {
 
   const handleListen = useCallback(() => {
     if (!selectedDoa) return;
-    speak(selectedDoa.latin, { rate: 0.6 });
+    const played = playWithProgress(
+      selectedDoa.latin,
+      setProgress,
+      () => setProgress(-1)
+    );
+    if (!played) speak(selectedDoa.latin, { rate: 0.6 });
   }, [selectedDoa]);
 
   const handleSyllableTap = useCallback((syllable: string) => {
@@ -100,9 +117,10 @@ export default function DoaHarianPage() {
     recognition.start();
   }, [isListening, handleSuccess]);
 
-  // Cleanup recognition on unmount
+  // Cleanup recognition and audio on unmount
   useEffect(() => {
     return () => {
+      stopAudio();
       if (recognitionRef.current) {
         recognitionRef.current.abort();
       }
@@ -110,6 +128,13 @@ export default function DoaHarianPage() {
   }, []);
 
   const supportsSpeechRecognition = isSpeechRecognitionSupported();
+
+  // Karaoke fill: how much of each Arabic word / Latin syllable has been read (0..1).
+  // Arabic weighted by letters without harakat so vowel marks don't skew timing.
+  const arabicWords = selectedDoa ? selectedDoa.arabic.split(" ") : [];
+  const playing = progress >= 0;
+  const wordFill = playing ? partFills(arabicWords.map((w) => w.replace(/[\u064B-\u0652\u0670]/g, "")), progress) : [];
+  const sylFill = playing && selectedDoa ? partFills(selectedDoa.syllablesLatin, progress) : [];
 
   return (
     <GameShell title="Doa Harian" backHref="/islami" onBack={selectedDoa ? handleBack : undefined} backLabel={selectedDoa ? "Kembali ke daftar doa" : "Kembali ke menu Islami"}>
@@ -125,28 +150,45 @@ export default function DoaHarianPage() {
             exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.25 }}
           >
-            <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
-              {dailyDoas.map((doa) => {
+            <label className="block mb-3">
+              <span className="sr-only">Cari doa</span>
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cari doa, misal: makan, tidur"
+                className="w-full min-h-[52px] rounded-full border-2 border-line bg-surface px-5 font-body text-lg text-ink placeholder:text-ink-muted focus:border-accent-strong focus:outline-none"
+              />
+            </label>
+            {shownDoas.length === 0 && (
+              <p className="font-body text-lg text-ink-muted text-center py-8">Doa &ldquo;{query}&rdquo; belum ada.</p>
+            )}
+            {/* Square cards: picture on top, title + when to read below */}
+            <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {shownDoas.map((doa) => {
                 const isAttempted = doasAttempted.includes(doa.id);
                 return (
-                  <motion.button
-                    key={doa.id}
-                    onClick={() => handleSelectDoa(doa.id)}
-                    className="relative bg-surface rounded-3xl p-4 border border-line flex flex-col items-center text-center min-h-[140px] transition-colors hover:bg-accent-soft active:bg-line"
-                    whileTap={{ scale: 0.97 }}
-                  >
-                    {isAttempted && (
-                      <span className="absolute top-2 right-2 w-8 h-8 rounded-full bg-good-strong text-on-accent flex items-center justify-center" role="img" aria-label="Sudah dicoba">
-                        <Icon name="check" size={20} />
+                  <li key={doa.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectDoa(doa.id)}
+                      className="relative w-full h-full bg-surface rounded-3xl p-2 border border-line flex flex-col gap-2 text-left transition-colors hover:bg-accent-soft active:bg-line"
+                    >
+                      <AssetImage src={`/images/doa/${doa.id}.webp`} className="w-full aspect-square rounded-2xl" />
+                      <span className="px-1 pb-1 min-w-0">
+                        <span className="block font-heading text-base sm:text-lg font-bold text-ink leading-tight">{doa.title}</span>
+                        <span className="block text-sm text-ink-muted font-body">{doa.situation}</span>
                       </span>
-                    )}
-                    <span className="text-5xl mb-2">{doa.emoji}</span>
-                    <h3 className="font-heading text-lg font-bold text-ink leading-tight">{doa.title}</h3>
-                    <p className="text-sm text-ink-muted mt-1 font-body">{doa.situation}</p>
-                  </motion.button>
+                      {isAttempted && (
+                        <span className="absolute top-3 right-3 w-8 h-8 rounded-full bg-good-strong text-on-accent flex items-center justify-center" role="img" aria-label="Sudah dicoba">
+                          <Icon name="check" size={20} />
+                        </span>
+                      )}
+                    </button>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </motion.div>
         ) : (
           /* ==================== DETAIL VIEW ==================== */
@@ -156,84 +198,94 @@ export default function DoaHarianPage() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 24 }}
             transition={{ duration: 0.25 }}
-            className="max-w-lg mx-auto flex flex-col gap-4"
+            className="max-w-lg mx-auto flex flex-col gap-3 h-[calc(100dvh-13rem)] sm:h-[calc(100dvh-11rem)] min-h-[440px] max-h-[760px]"
           >
-            <div className="bg-surface rounded-3xl border border-line p-5 sm:p-6">
-              <div className="text-center mb-3">
-                <span className="text-6xl">{selectedDoa.emoji}</span>
-              </div>
-
-              <h2 className="font-heading text-3xl font-bold text-ink text-center mb-1">{selectedDoa.title}</h2>
-              <p className="text-center text-base text-ink-muted font-body mb-4">
-                Dibaca saat: {selectedDoa.situation}
-              </p>
-
-              {/* Arabic text */}
-              <div className="bg-paper p-6 rounded-2xl mb-4" dir="rtl" lang="ar">
-                <p className="font-arabic text-4xl text-right text-ink leading-loose">{selectedDoa.arabic}</p>
-              </div>
-
-              {/* Latin transliteration */}
-              <div className="mb-3">
-                <p className="text-xl text-ink leading-relaxed font-body text-center mb-3">{selectedDoa.latin}</p>
-                <div className="flex flex-wrap gap-3 justify-center">
-                  {selectedDoa.syllablesLatin.map((syl, i) => (
-                    <button
-                      key={`${syl}-${i}`}
-                      type="button"
-                      onClick={() => handleSyllableTap(syl)}
-                      className="bg-accent-soft text-ink font-heading text-lg px-4 rounded-full min-w-[48px] min-h-[48px] border border-line transition-colors hover:bg-line active:bg-line"
-                    >
-                      {syl}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-ink-muted italic text-center font-body text-base mb-5 leading-relaxed">
-                &ldquo;{selectedDoa.meaning}&rdquo;
-              </p>
-
-              <div className="flex flex-col gap-3">
-                <BigButton onClick={handleListen} className="w-full">
-                  <Icon name="speaker" /> Dengar
-                </BigButton>
-
-                {!showSuccess && (
-                  <>
-                    {supportsSpeechRecognition ? (
-                      <BigButton
-                        tone={isListening ? "primary" : "good"}
-                        onClick={handleTrySpeak}
-                        aria-pressed={isListening}
-                        className="w-full"
-                      >
-                        <Icon name="mic" /> {isListening ? "Sedang mendengar…" : "Coba Ucapkan"}
-                      </BigButton>
-                    ) : (
-                      <BigButton tone="good" onClick={handleSuccess} className="w-full">
-                        <Icon name="check" /> Berhasil
-                      </BigButton>
-                    )}
-                  </>
-                )}
-
-                {showSuccess && (
-                  <motion.div
-                    className="bg-paper rounded-2xl p-5 text-center flex flex-col items-center gap-2"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    <span className="w-14 h-14 rounded-full bg-good-strong text-on-accent flex items-center justify-center">
-                      <Icon name="star" size={28} />
-                    </span>
-                    <p className="font-heading text-2xl text-ink font-bold">MasyaAllah! Hebat!</p>
-                    <p className="font-body text-base text-ink-muted">+3 bintang</p>
-                  </motion.div>
-                )}
+            {/* Title row */}
+            <div className="shrink-0 flex items-center gap-3">
+              <AssetImage src={`/images/doa/${selectedDoa.id}.webp`} eager className="w-14 h-14 shrink-0 rounded-xl" />
+              <div className="min-w-0">
+                <h2 className="font-heading text-xl sm:text-2xl font-bold text-ink leading-tight">{selectedDoa.title}</h2>
+                <p className="text-sm text-ink-muted font-body">Dibaca saat: {selectedDoa.situation}</p>
               </div>
             </div>
+
+            {/* Text: scrolls inside the card when a doa is long */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-surface rounded-3xl border border-line p-4 flex flex-col gap-3">
+              <p className="font-arabic text-3xl sm:text-4xl text-right text-ink leading-loose" dir="rtl" lang="ar">
+                {arabicWords.map((w, i) => (
+                  <span key={i}>
+                    {/* Coloured copy on top, revealed right-to-left: whole word stays one shaped run. */}
+                    <span className="relative inline-block">
+                      {/* While playing, unread text dims so the read part stands out */}
+                      <span className={playing ? "text-ink-muted opacity-60" : ""}>{w}</span>
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-0 text-accent-strong"
+                        style={{ clipPath: `inset(-50% 0 -50% ${(1 - (wordFill[i] ?? 0)) * 100}%)` }}
+                      >
+                        {w}
+                      </span>
+                    </span>{" "}
+                  </span>
+                ))}
+              </p>
+              <p className="text-lg text-ink leading-relaxed font-body text-center">{selectedDoa.latin}</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {selectedDoa.syllablesLatin.map((syl, i) => (
+                  <button
+                    key={`${syl}-${i}`}
+                    type="button"
+                    onClick={() => handleSyllableTap(syl)}
+                    className="relative overflow-hidden bg-accent-soft text-ink font-heading text-base px-3 rounded-full min-w-[44px] min-h-[44px] border border-line hover:bg-line active:bg-line"
+                  >
+                    {syl}
+                    {/* Fill sweeps left-to-right as the syllable is read */}
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 flex items-center justify-center bg-accent-strong text-on-accent"
+                      style={{ clipPath: `inset(0 ${(1 - (sylFill[i] ?? 0)) * 100}% 0 0)` }}
+                    >
+                      {syl}
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-ink-muted text-center font-body text-base leading-relaxed">
+                Artinya: {selectedDoa.meaning}
+              </p>
+              <p className="mt-auto pt-1 text-center font-body text-xs text-ink-muted">
+                {selectedDoa.quran ? (
+                  <>Sumber teks: {selectedDoa.quran}, mushaf Tanzil (<a href="https://tanzil.net" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">tanzil.net</a>)</>
+                ) : (
+                  <>Sumber: doa harian dari hadits, teks belum diverifikasi ustadz</>
+                )}
+              </p>
+            </div>
+
+            {/* Actions */}
+            {showSuccess ? (
+              <div className="shrink-0 bg-surface border border-good-strong rounded-3xl min-h-[72px] px-4 flex items-center justify-center gap-3">
+                <span className="w-10 h-10 rounded-full bg-good-strong text-on-accent flex items-center justify-center">
+                  <Icon name="star" size={22} />
+                </span>
+                <p className="font-heading text-xl text-ink font-bold">MasyaAllah! +3 bintang</p>
+              </div>
+            ) : (
+              <div className="shrink-0 grid grid-cols-2 gap-3">
+                <BigButton tone="quiet" onClick={handleListen}>
+                  <Icon name="speaker" /> Dengar
+                </BigButton>
+                {supportsSpeechRecognition ? (
+                  <BigButton tone={isListening ? "primary" : "good"} onClick={handleTrySpeak} aria-pressed={isListening}>
+                    <Icon name="mic" /> {isListening ? "Mendengar…" : "Ucapkan"}
+                  </BigButton>
+                ) : (
+                  <BigButton tone="good" onClick={handleSuccess}>
+                    <Icon name="check" /> Berhasil
+                  </BigButton>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

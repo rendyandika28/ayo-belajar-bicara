@@ -1,5 +1,6 @@
 "use client";
 
+import { hijaiyahLetters, dailyDoas, asmaulHusna } from "@/data/islamic";
 import CalmModeToggle from "@/components/CalmModeToggle";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -252,9 +253,9 @@ export default function PendampingPage() {
               <h2 className={h2}>Progres Islami</h2>
               <div className="space-y-4">
                 {[
-                  { name: "Huruf Hijaiyah", value: hijaiyahLearned.length, max: 29, tone: "bg-good-strong" },
-                  { name: "Doa Harian", value: doasAttempted.length, max: 10, tone: "bg-warn-strong" },
-                  { name: "Asmaul Husna", value: asmaulHusnaLearned.length, max: 10, tone: "bg-accent" },
+                  { name: "Huruf Hijaiyah", value: hijaiyahLearned.length, max: hijaiyahLetters.length, tone: "bg-good-strong" },
+                  { name: "Doa Harian", value: doasAttempted.length, max: dailyDoas.length, tone: "bg-warn-strong" },
+                  { name: "Asmaul Husna", value: asmaulHusnaLearned.length, max: asmaulHusna.length, tone: "bg-accent" },
                 ].map((row) => (
                   <div key={row.name}>
                     <div className="flex justify-between mb-1.5">

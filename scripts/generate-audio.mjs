@@ -6,7 +6,7 @@
  *
  *   npm run gen:audio                    # all missing
  *   npm run gen:audio -- --only kucing,ma --force   # exact keys
- *   npm run gen:audio -- --kind syllable --force    # one kind: word | syllable | wordSyllable | sentence | islamic
+ *   npm run gen:audio -- --kind syllable --force    # one kind: word | syllable | wordSyllable | sentence | islamic | hijaiyah | asma
  *   npm run gen:audio -- --force         # re-record
  *
  * Texts come from data/words.ts, data/islamic.ts, the Suku Kata syllable list and
@@ -35,6 +35,8 @@ const STYLE = {
   word: "A warm, gentle Indonesian kindergarten teacher saying one Bahasa Indonesia word to a young child. Slow, clear, friendly. Say only the word.",
   syllable: "A warm, gentle Indonesian kindergarten teacher pronouncing a single Bahasa Indonesia syllable to a young child, slowly and clearly. Say only the syllable.",
   sentence: "A warm, gentle Indonesian kindergarten teacher reading a short Bahasa Indonesia phrase to a young child. Slow, clear, friendly.",
+  hijaiyah: "A calm, gentle Muslim Qur'an teacher (ustadzah) naming one Arabic hijaiyah letter for a young child learning to read the Qur'an. Read the Arabic text exactly as written, in Classical Arabic, with correct makhraj and tajwid: ث is the interdental /θ/ (never /t/ or /s/), ذ is /ð/, ظ is emphatic /ðˤ/, ص ض ط are emphatic, ح is the voiceless pharyngeal /ħ/ and ه is the soft /h/, ع is the pharyngeal /ʕ/, غ is /ɣ/, خ is /x/, ق is the deep uvular /q/. Slow, clear, respectful. Say only the letter name, nothing else.",
+  asma: "A calm, gentle Muslim Qur'an teacher (ustadzah) reciting one of the 99 names of Allah (Asmaul Husna) for a young child. Read the Arabic text exactly as written, in Classical Arabic with correct makhraj and tajwid, including the final vowel shown. Slow, clear, reverent. Say only the name, nothing else.",
   islamic: "A calm, gentle Indonesian Muslim teacher reciting Arabic in Latin transliteration for a young child. Slow, clear, respectful.",
 };
 
@@ -58,7 +60,7 @@ const TALING = {
   "me--merah": "mé", "nye--oranye": "nyé", "pen--pensil": "pén", "sen--sendok": "sén",
 };
 
-function styleFor({ text, kind, word, idx }) {
+function styleFor({ key, text, kind, word, idx }) {
   if (kind === "wordSyllable") {
     const parts = word.syllables.join("-");
     const key = syllableKey(text, word.word);
@@ -67,11 +69,21 @@ function styleFor({ text, kind, word, idx }) {
       : text.includes("e") ? ` The vowel e here is a weak schwa (e pepet /ə/, as in "belajar" and "kecil"), never a clear e.` : "";
     return `${STYLE.syllable} Say ONLY the syllable "${text}", exactly as it sounds inside the Indonesian word "${word.word}" (part ${idx + 1} of ${word.syllables.length}: ${parts}).${eNote} ${PHONETICS} ${INDONESIAN_ONLY}`;
   }
-  if (kind !== "syllable") return `${STYLE[kind]} ${kind === "islamic" ? "" : INDONESIAN_ONLY}`;
+  if (kind === "hijaiyah") return `${STYLE.hijaiyah} ${HIJAIYAH_SAY[key]?.note ?? ""}`;
+  if (kind !== "syllable") return `${STYLE[kind]} ${kind === "islamic" || kind === "asma" ? "" : INDONESIAN_ONLY}`;
   const ex = exampleWord(text);
   return `${STYLE.syllable} This is the Indonesian syllable "${text}". ${ex ? `Pronounce it exactly as it sounds inside the Indonesian word "${ex}".` : ""} ${PHONETICS} ${INDONESIAN_ONLY}`;
 }
+// Hijaiyah letters the model still misreads from Arabic script: send a spelling plus a
+// mouth-position hint (the interdental ث came out as "ta").
+const HIJAIYAH_SAY = {
+  "hijaiyah-hij-4": { text: "Thaa", note: 'This is the Arabic letter ث (tsa). Start with the voiceless interdental fricative /θ/: tip of the tongue lightly between the front teeth, air hissing out, exactly like "th" in English "think" and "three". Then a long "aa". It must NOT sound like "taa" or "saa".' },
+  "hijaiyah-hij-9": { text: "Dhaal", note: 'This is the Arabic letter ذ (dzal). Start with the voiced interdental fricative /ð/: tip of the tongue lightly between the front teeth with the voice on, exactly like "th" in English "this" and "that". Then a long "aa" and a clear "l" at the end. It must NOT sound like "daal" or "zaal".' },
+  "hijaiyah-hij-17": { text: "Dhaa", note: 'This is the Arabic letter ظ (zha). Start with the emphatic voiced interdental /ðˤ/: tongue tip between the front teeth with the voice on, like "th" in English "this", but heavy and full-mouthed (tafkhim), with the back of the tongue raised so the following "aa" sounds deep and dark, close to "dhaw". It must NOT sound like "zaa", "daa" or the light ذ.' },
+};
+
 const spoken = ({ key, text, kind }) =>
+  kind === "hijaiyah" ? (HIJAIYAH_SAY[key]?.text ?? text) :
   kind === "wordSyllable" ? (TALING[key] ?? SAY_AS[text] ?? text)
   : kind === "syllable" ? (SAY_AS[text] ?? text)
   : text;
@@ -103,9 +115,12 @@ words.forEach((w) => w.syllables.forEach((s, idx) => {
 }));
 const suku = readFileSync(join(root, "app/suku-kata/page.tsx"), "utf8").match(/SINGLE_SYLLABLES = \[([\s\S]*?)\]/)[1];
 [...suku.matchAll(/"([^"]+)"/g)].forEach((m) => add(m[1], "syllable"));
-hijaiyahLetters.forEach((h) => add(h.name, "islamic"));
+// Letter names are recorded from the Arabic spelling, keyed by id: Latin names collide
+// with Indonesian syllables ("ba", "ta") and with each other (ح and ه are both "Ha").
+hijaiyahLetters.forEach((h) => texts.set(`hijaiyah-${h.id}`, { key: `hijaiyah-${h.id}`, text: h.arabicName, kind: "hijaiyah" }));
 dailyDoas.forEach((d) => { add(d.latin, "islamic"); (d.syllablesLatin ?? []).forEach((s) => add(s, "islamic")); });
-asmaulHusna.forEach((a) => add(a.latin, "islamic"));
+// Names recorded from the Arabic spelling, keyed by id (Latin spellings are read the Indonesian way).
+asmaulHusna.forEach((a) => texts.set(a.id, { key: a.id, text: a.arabic, kind: "asma" }));
 EXTRA.forEach((t) => add(t, "sentence"));
 
 mkdirSync(outDir, { recursive: true });

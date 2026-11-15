@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { speakIslamic } from "@/lib/speech";
+import { speakHijaiyah } from "@/lib/speech";
 import { playPop, playCorrect, playWrong } from "@/lib/sounds";
 import { hijaiyahLetters } from "@/data/islamic";
 import { useAppStore } from "@/store/useAppStore";
@@ -87,7 +87,7 @@ export default function HijaiyahPage() {
 
   const handleCardTap = useCallback(() => {
     if (currentLetter) {
-      speakIslamic(currentLetter.name);
+      speakHijaiyah(currentLetter);
     }
   }, [currentLetter]);
 
@@ -258,7 +258,7 @@ export default function HijaiyahPage() {
               <p className="font-heading text-3xl font-bold text-ink">{currentQuestion.correctLetter.name}</p>
               <button
                 type="button"
-                onClick={() => speakIslamic(currentQuestion.correctLetter.name)}
+                onClick={() => speakHijaiyah(currentQuestion.correctLetter)}
                 className="inline-flex items-center gap-2 min-h-14 px-4 rounded-full bg-surface border-2 border-line font-heading text-lg text-ink transition-colors hover:bg-accent-soft active:bg-line"
               >
                 <Icon name="speaker" /> Dengar
@@ -317,96 +317,88 @@ export default function HijaiyahPage() {
     );
   }
 
-  // Learning mode
+  // Learning mode: choices on the left, the chosen letter on the right. Fits one screen.
   return (
     <GameShell title="Huruf Hijaiyah" backHref="/islami" backLabel="Kembali ke menu Islami">
-      <p className="text-center font-body text-base text-ink-muted mb-2">
-        {currentIndex + 1} / {hijaiyahLetters.length}
-      </p>
-
-      <div
-        className="flex flex-col items-center"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Flashcard */}
-        <div className="relative w-full max-w-sm" style={{ minHeight: 300 }}>
-          <AnimatePresence mode="wait" custom={direction}>
-            {currentLetter && (
-              <motion.div
-                key={currentLetter.id}
-                custom={direction}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: "tween", duration: 0.25 }}
-                onClick={handleCardTap}
-                className="absolute inset-0 bg-surface rounded-3xl border border-line p-6 flex flex-col items-center justify-center cursor-pointer select-none"
+      <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-3 sm:gap-4 h-[calc(100dvh-13rem)] sm:h-[calc(100dvh-11rem)] min-h-[420px] max-h-[720px]">
+        {/* Letter picker (scrolls inside its own panel) */}
+        <nav aria-label="Pilih huruf" className="min-h-0 overflow-y-auto overscroll-contain rounded-3xl border border-line bg-surface p-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2" dir="rtl">
+            {hijaiyahLetters.map((l, i) => (
+              <button
+                key={l.id}
+                type="button"
+                onClick={() => {
+                  setDirection(i > currentIndex ? 1 : -1);
+                  setCurrentIndex(i);
+                  playPop();
+                  speakHijaiyah(l);
+                }}
+                aria-label={l.name}
+                aria-current={i === currentIndex ? "true" : undefined}
+                className={`min-h-[56px] rounded-2xl border-2 flex items-center justify-center font-arabic text-3xl sm:text-4xl leading-none transition-colors ${
+                  i === currentIndex
+                    ? "bg-accent-soft border-accent-strong text-ink"
+                    : hijaiyahLearned.includes(l.id)
+                    ? "bg-paper border-good-strong text-ink"
+                    : "bg-paper border-line text-ink hover:bg-accent-soft"
+                }`}
+                lang="ar"
               >
-                <span
-                  className="font-arabic leading-normal mb-4 mt-2 text-ink"
-                  style={{ fontSize: "clamp(72px, 18vw, 112px)" }}
-                  dir="rtl" lang="ar"
+                {l.letter}
+              </button>
+            ))}
+          </div>
+        </nav>
+
+        {/* Chosen letter */}
+        <div className="min-h-0 flex flex-col gap-3">
+          <div
+            className="relative flex-1 min-h-0"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            <AnimatePresence mode="wait" custom={direction}>
+              {currentLetter && (
+                <motion.button
+                  type="button"
+                  key={currentLetter.id}
+                  custom={direction}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{ type: "tween", duration: 0.2 }}
+                  onClick={handleCardTap}
+                  aria-label={`Dengar huruf ${currentLetter.name}`}
+                  className="absolute inset-0 bg-surface rounded-3xl border border-line p-3 flex flex-col items-center justify-center gap-1 select-none hover:bg-accent-soft transition-colors"
                 >
-                  {currentLetter.letter}
-                </span>
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="font-heading text-3xl font-bold text-ink">{currentLetter.name}</h2>
-                  <span className="text-2xl">{currentLetter.emoji}</span>
-                </div>
-                <p className="text-xl text-ink-muted font-body">({currentLetter.transliteration})</p>
-                <p className="mt-4 flex items-center gap-2 text-base text-ink-muted font-body">
-                  <Icon name="speaker" size={20} /> Ketuk untuk dengar
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <span className="font-body text-sm text-ink-muted">{currentIndex + 1} / {hijaiyahLetters.length}</span>
+                  <span className="font-arabic leading-tight text-ink" style={{ fontSize: "clamp(64px, 16vh, 128px)" }} dir="rtl" lang="ar">
+                    {currentLetter.letter}
+                  </span>
+                  <span className="font-heading text-2xl sm:text-3xl font-bold text-ink">{currentLetter.name}</span>
+                  <span className="text-lg text-ink-muted font-body">({currentLetter.transliteration})</span>
+                  <span className="mt-1 flex items-center gap-1 text-sm text-ink-muted font-body">
+                    <Icon name="speaker" size={18} /> Ketuk untuk dengar
+                  </span>
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div className="shrink-0 grid grid-cols-2 gap-2">
+            <BigButton tone="quiet" onClick={goPrev} disabled={currentIndex === 0} aria-label="Sebelumnya" className="px-2">
+              <Icon name="prev" size={28} />
+            </BigButton>
+            <BigButton tone="quiet" onClick={goNext} disabled={currentIndex >= hijaiyahLetters.length - 1} aria-label="Selanjutnya" className="px-2">
+              <Icon name="next" size={28} />
+            </BigButton>
+          </div>
+          <BigButton tone="good" onClick={startQuiz} className="shrink-0 w-full">
+            <Icon name="target" /> Quiz
+          </BigButton>
         </div>
-
-        {/* Navigation */}
-        <div className="grid grid-cols-3 gap-3 w-full max-w-sm mt-5">
-          <BigButton tone="quiet" onClick={goPrev} disabled={currentIndex === 0} aria-label="Sebelumnya">
-            <Icon name="prev" size={32} />
-          </BigButton>
-          <BigButton onClick={handleCardTap} aria-label="Ucapkan huruf">
-            <Icon name="speaker" size={32} />
-          </BigButton>
-          <BigButton tone="quiet" onClick={goNext} disabled={currentIndex >= hijaiyahLetters.length - 1} aria-label="Selanjutnya">
-            <Icon name="next" size={32} />
-          </BigButton>
-        </div>
-
-        <BigButton tone="good" onClick={startQuiz} className="w-full max-w-sm mt-3">
-          <Icon name="target" /> Quiz
-        </BigButton>
-      </div>
-
-        {/* Letter grid: replaces progress dots; tap jumps to that letter */}
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 w-full max-w-3xl mx-auto mt-6" dir="rtl">
-          {hijaiyahLetters.map((l, i) => (
-            <button
-              key={l.id}
-              type="button"
-              onClick={() => {
-                setDirection(i > currentIndex ? 1 : -1);
-                setCurrentIndex(i);
-                playPop();
-              }}
-              aria-label={l.name}
-              aria-current={i === currentIndex ? "true" : undefined}
-              className={`min-h-[72px] rounded-2xl border-2 flex items-center justify-center font-arabic text-5xl leading-none transition-colors ${
-                i === currentIndex
-                  ? "bg-accent-soft border-accent-strong text-ink"
-                  : hijaiyahLearned.includes(l.id)
-                  ? "bg-surface border-good-strong text-ink"
-                  : "bg-surface border-line text-ink"
-              }`}
-              lang="ar"
-            >
-              {l.letter}
-            </button>
-          ))}
       </div>
     </GameShell>
   );

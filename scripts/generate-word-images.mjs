@@ -81,7 +81,7 @@ async function kie(path, body) {
 }
 
 // Family words stay faceless: every family looks different (user request).
-const negativeFor = (id) => (id.startsWith("kel-") ? `${NEGATIVE}, face, eyes, nose, mouth, facial features, hair details` : NEGATIVE);
+const negativeFor = (id) => (/^(kel-|doa-|islami-)/.test(id) ? `${NEGATIVE}, face, eyes, nose, mouth, facial features, hair details` : NEGATIVE);
 
 async function generate(id, subject) {
   const { taskId } = await kie("createTask", {
