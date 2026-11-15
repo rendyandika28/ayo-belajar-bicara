@@ -64,7 +64,7 @@ describe("tebak-suara Lanjut", () => {
     speak.mockClear();
     fireEvent.click(screen.getAllByRole("button", { name: /^dengar$/i })[0]);
     const word = words.find((w) => w.word === speak.mock.calls[0][0])!;
-    fireEvent.click(screen.getAllByText(word.emoji)[0].closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: word.word }));
   }
 
   it("a second tap on the exiting Lanjut does not skip a question", () => {

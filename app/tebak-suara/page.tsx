@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { words, Word } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
-import { speak, speakSyllable } from "@/lib/speech";
+import { speak } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import Link from "next/link";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 import GameTutorial from "@/components/GameTutorial";
+import WordPicture from "@/components/WordPicture";
 
 const SESSION_SIZE = 10;
 
@@ -75,9 +76,8 @@ export default function TebakSuaraPage() {
 
   const handleListenSlow = useCallback(() => {
     if (!current) return;
-    current.word.syllables.forEach((syl, i) => {
-      setTimeout(() => speakSyllable(syl, undefined, current.word.word), i * 700);
-    });
+    // Same natural recording, played slower (was syllable clips joined by gaps: sounded halting).
+    speak(current.word.word, { speed: 0.5 });
   }, [current]);
 
   const handleSelect = useCallback(
@@ -198,14 +198,16 @@ export default function TebakSuaraPage() {
       <GameTutorial
         gameKey="tebak-suara"
         steps={[
-          { emoji: "\ud83d\udd0a", text: "Dengarkan suara kata yang diputar. Ada tombol 'Dengar' untuk mengulang." },
-          { emoji: "\ud83d\uddbc\ufe0f", text: "Tebak dengan memilih jawaban yang benar dari gambar yang tersedia!" },
+          { image: "/images/ui/listen.webp", text: "Dengarkan suara kata yang diputar. Ada tombol 'Dengar' untuk mengulang." },
+          { image: "/images/ui/choose.webp", text: "Tebak dengan memilih jawaban yang benar dari gambar yang tersedia!" },
         ]}
       />
       <ConfettiEffect show={showConfetti} />
 
+      {/* Fits one screen (dvh minus GameShell header/padding): no scrolling while playing. */}
+      <div className="max-w-md mx-auto flex flex-col h-[calc(100dvh-13rem)] sm:h-[calc(100dvh-11rem)] min-h-[460px] max-h-[760px]">
       {/* Progress */}
-      <div className="w-full h-3 bg-line rounded-full overflow-hidden">
+      <div className="shrink-0 w-full h-3 bg-line rounded-full overflow-hidden">
         <motion.div
           className="h-full bg-accent-strong rounded-full"
           initial={{ width: 0 }}
@@ -213,8 +215,9 @@ export default function TebakSuaraPage() {
           transition={{ duration: 0.3, ease: "easeOut" }}
         />
       </div>
-      <p className="text-center text-base text-ink-muted font-heading mt-2 mb-4">
-        {index + 1} / {SESSION_SIZE} · {score} bintang
+      <p className="shrink-0 flex justify-between text-base text-ink-muted font-heading mt-1 mb-3">
+        <span>{index + 1} / {SESSION_SIZE}</span>
+        <span>{score} bintang</span>
       </p>
 
       <AnimatePresence mode="wait">
@@ -224,23 +227,51 @@ export default function TebakSuaraPage() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -24, pointerEvents: "none" }}
           transition={{ duration: 0.25 }}
-          className="w-full max-w-md mx-auto flex flex-col items-center gap-5"
+          className="flex-1 min-h-0 w-full flex flex-col items-center gap-3"
         >
-          {/* Question card */}
-          <div className="w-full bg-surface rounded-3xl border border-line p-5 flex flex-col items-center gap-4">
-            <p className="font-heading text-2xl font-bold text-ink">Suara apa ini?</p>
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <BigButton onClick={handleListen}>
-                <SpeakerIcon /> Dengar
-              </BigButton>
-              <BigButton tone="quiet" onClick={handleListenSlow}>
-                <SlowIcon /> Dengar Pelan
-              </BigButton>
+          {/* Top card: the question, swapped for "say it" once answered right (same slot, no growth) */}
+          {!showSpeak ? (
+            <div className="shrink-0 w-full h-[168px] bg-surface rounded-3xl border-2 border-line p-3 flex flex-col items-center justify-center gap-3">
+              <p className="font-heading text-2xl font-bold text-ink">Suara apa ini?</p>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <BigButton onClick={handleListen}>
+                  <SpeakerIcon /> Dengar
+                </BigButton>
+                <BigButton tone="quiet" onClick={handleListenSlow}>
+                  <SlowIcon /> Pelan
+                </BigButton>
+              </div>
             </div>
-          </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className="shrink-0 w-full h-[168px] bg-surface border-2 border-good-strong rounded-3xl p-3 flex flex-col items-center justify-center gap-3"
+            >
+              <div className="flex items-center gap-2 flex-wrap justify-center">
+                <span className="flex items-center gap-1 font-heading text-lg font-bold text-good-strong">
+                  <CheckIcon /> Benar! Ucapkan:
+                </span>
+                {current.word.syllables.map((syl, i) => (
+                  <span key={i} className="font-heading text-2xl font-bold text-ink bg-accent-soft px-3 py-0.5 rounded-xl">
+                    {syl}
+                  </span>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <BigButton tone="quiet" onClick={handleListen}>
+                  <SpeakerIcon /> Dengar
+                </BigButton>
+                <BigButton tone="good" onClick={() => handleNext(index)}>
+                  Lanjut <ArrowIcon />
+                </BigButton>
+              </div>
+            </motion.div>
+          )}
 
-          {/* Options grid (2×2) — emoji only, no word label */}
-          <div className="grid grid-cols-2 gap-4 w-full">
+          {/* Options grid (2×2) — picture only, no word label */}
+          <div className="flex-1 min-h-0 grid grid-cols-2 grid-rows-2 gap-3 w-full">
             {current.options.map((opt) => {
               const isSelected = selectedId === opt.id;
               const isCorrectAnswer = opt.id === current.word.id;
@@ -260,20 +291,21 @@ export default function TebakSuaraPage() {
                   whileTap={!isLocked ? { scale: 0.96 } : {}}
                   onClick={() => handleSelect(opt)}
                   disabled={isLocked}
+                  aria-label={opt.word}
                   className={[
-                    "relative rounded-3xl flex flex-col items-center justify-center gap-1 border-4 aspect-square min-h-[96px] transition-colors duration-200",
+                    "relative min-h-0 rounded-3xl flex flex-col items-center justify-center gap-1 border-4 p-2 transition-colors duration-200",
                     isSelectedCorrect
-                      ? "border-good-strong bg-surface"
+                      ? "border-good-strong bg-paper"
                       : isSelectedWrong
-                      ? "border-warn bg-surface"
+                      ? "border-warn bg-paper"
                       : revealCorrect
-                      ? "border-good bg-surface"
+                      ? "border-good bg-paper"
                       : dimmed
-                      ? "border-line bg-surface opacity-50"
-                      : "border-line bg-surface",
+                      ? "border-line bg-paper opacity-40"
+                      : "border-line bg-paper hover:border-accent",
                   ].join(" ")}
                 >
-                  <span className="text-5xl sm:text-6xl">{opt.emoji}</span>
+                  <WordPicture word={opt} className="h-[78%] max-h-40 w-auto aspect-square" emojiClassName="text-5xl sm:text-6xl" />
                   {isSelectedCorrect && (
                     <span className="absolute top-2 right-2 w-9 h-9 rounded-full bg-good-strong text-on-accent flex items-center justify-center">
                       <CheckIcon />
@@ -287,47 +319,9 @@ export default function TebakSuaraPage() {
             })}
           </div>
 
-          {/* Speak prompt — shown after correct answer */}
-          <AnimatePresence>
-            {showSpeak && (
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                transition={{ duration: 0.25 }}
-                className="w-full bg-surface border border-line rounded-3xl p-5 flex flex-col items-center gap-4"
-              >
-                <p className="flex items-center gap-2 font-heading text-xl font-bold text-good-strong">
-                  <CheckIcon /> Benar!
-                </p>
-
-                {/* Syllable breakdown */}
-                <div className="flex items-center gap-2 flex-wrap justify-center">
-                  {current.word.syllables.map((syl, i) => (
-                    <span
-                      key={i}
-                      className="font-heading text-3xl font-bold text-ink bg-accent-soft px-3 py-1 rounded-xl"
-                    >
-                      {syl}
-                    </span>
-                  ))}
-                </div>
-
-                <p className="font-heading text-xl text-ink">Coba ucapkan sendiri!</p>
-
-                <div className="grid grid-cols-2 gap-3 w-full">
-                  <BigButton tone="quiet" onClick={handleListen}>
-                    <SpeakerIcon /> Dengar Lagi
-                  </BigButton>
-                  <BigButton tone="good" onClick={() => handleNext(index)}>
-                    Lanjut <ArrowIcon />
-                  </BigButton>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
       </AnimatePresence>
+      </div>
     </GameShell>
   );
 }

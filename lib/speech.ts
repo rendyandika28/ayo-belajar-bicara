@@ -102,13 +102,16 @@ function playRecorded(
   onEnd?: () => void,
   keys: string[] = [audioKey(text)],
   onProgress?: (fraction: number) => void,
-  rate?: number
+  rate?: number,
+  speed?: number
 ): boolean {
   const key = keys.find((k) => recorded.has(k));
   if (!key || typeof Audio === "undefined") return false;
   stopRecorded();
   window.speechSynthesis?.cancel();
   const audio = new Audio(asset(`/audio/${key}.mp3`));
+  // Slower playback of the same natural recording; browsers keep the pitch by default.
+  if (speed) { audio.playbackRate = speed; audio.preservesPitch = true; }
   currentAudio = audio;
   let done = false;
   // Runs once however the clip ends: finished, replaced, stopped or failed mid-way.
@@ -154,8 +157,8 @@ function playRecorded(
 
 export function speak(
   text: string,
-  /** tts: skip recordings, always use the browser voice. */
-  options?: { rate?: number; pitch?: number; lang?: string; onEnd?: () => void; tts?: boolean }
+  /** tts: skip recordings, always use the browser voice. speed: playback rate of the recording (0.7 = slower). */
+  options?: { rate?: number; pitch?: number; lang?: string; onEnd?: () => void; tts?: boolean; speed?: number }
 ) {
   if (typeof window === "undefined") return;
   try {
@@ -164,7 +167,9 @@ export function speak(
     return;
   }
 
-  if (!options?.tts && playRecorded(text, options?.onEnd, undefined, undefined, options?.rate)) return;
+  // Slow playback asked for: the browser voice (no recording) must be slow too.
+  if (options?.speed && options.rate === undefined) options = { ...options, rate: 0.6 };
+  if (!options?.tts && playRecorded(text, options?.onEnd, undefined, undefined, options?.rate, options?.speed)) return;
   if (!window.speechSynthesis) return;
   stopRecorded();
 
