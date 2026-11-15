@@ -3,7 +3,7 @@ import ClientLayout from "@/components/ClientLayout";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ayo-belajar-bicara.foya.dev/"),
+  metadataBase: new URL("https://ayo-belajar-bicara.rdydika.dev/"),
   title: "Ayo Belajar Bicara! 🌟",
   description:
     "Aplikasi terapi wicara interaktif untuk anak — belajar bicara sambil bermain!",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     siteName: "Ayo Belajar Bicara",
-    url: "https://ayo-belajar-bicara.foya.dev/",
+    url: "https://ayo-belajar-bicara.rdydika.dev/",
     images: [
       {
         url: "/og-image.png",

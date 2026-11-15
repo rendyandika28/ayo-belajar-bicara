@@ -1,4 +1,4 @@
-const CACHE_NAME = "web-adek-v2";
+const CACHE_NAME = "web-adek-v3";
 
 const APP_SHELL = [
   "/",
@@ -36,8 +36,8 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Only handle GET requests
-  if (request.method !== "GET") return;
+  // Only handle GET over http(s); chrome-extension:// etc. cannot be cached
+  if (request.method !== "GET" || !url.protocol.startsWith("http")) return;
 
   // Navigation requests: network-first, fall back to cached /offline
   if (request.mode === "navigate") {
@@ -80,7 +80,7 @@ self.addEventListener("fetch", (event) => {
 
   // Generated assets on Cloudflare R2 (pictures, recorded voice): immutable, cache-first
   // so pictures and sounds already seen keep working offline. Skip partial (206) media responses.
-  if (url.hostname.endsWith(".r2.dev")) {
+  if (url.hostname === "media.rdydika.dev" || url.hostname.endsWith(".r2.dev")) {
     event.respondWith(
       caches.match(request).then(
         (cached) =>
@@ -92,7 +92,7 @@ self.addEventListener("fetch", (event) => {
             }
             return response;
           })
-      )
+      ).catch(() => Response.error()) // blocked/offline: fail quietly, the app falls back to emoji/TTS
     );
     return;
   }
@@ -105,6 +105,6 @@ self.addEventListener("fetch", (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => caches.match(request).then((cached) => cached || Response.error()))
   );
 });

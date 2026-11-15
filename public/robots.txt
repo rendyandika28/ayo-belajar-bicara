@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://ayo-belajar-bicara.vercel.app/sitemap.xml
+Sitemap: https://ayo-belajar-bicara.rdydika.dev/sitemap.xml
