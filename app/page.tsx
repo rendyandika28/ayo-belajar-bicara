@@ -9,6 +9,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { playPop } from "@/lib/sounds";
 
 import { beginnerGames, advancedGames, type Game } from "@/lib/games";
+import { levelProgress } from "@/lib/levels";
 
 function GameCard({ game: item, eager }: { game: Game; eager?: boolean }) {
   return (
@@ -54,6 +55,7 @@ export default function HomePage() {
   const startSession = useAppStore((s) => s.startSession);
   const dailyStreak = useAppStore((s) => s.dailyStreak);
   const currentLevel = useAppStore((s) => s.currentLevel);
+  const wordCount = useAppStore((s) => s.wordsLearned.length);
 
   useEffect(() => {
     updateStreak();
@@ -101,7 +103,7 @@ export default function HomePage() {
           <h1 className="font-heading text-3xl sm:text-4xl font-bold text-ink leading-tight" style={{ overflowWrap: "break-word", minWidth: 0 }}>
             Ayo Belajar Bicara!
           </h1>
-          <p className="font-body text-base text-ink-muted mt-2">Level {currentLevel}</p>
+          <p className="font-body text-base text-ink-muted mt-2">Level {levelProgress(wordCount, currentLevel).current.level}</p>
         </div>
 
         <Section title="Mulai Belajar" tag="Pemula" games={beginnerGames} cols="sm:grid-cols-3" eager />

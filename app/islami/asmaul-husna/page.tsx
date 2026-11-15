@@ -13,7 +13,7 @@ import Icon from "@/components/ui/Icon";
 import ConfettiEffect from "@/components/ui/ConfettiEffect";
 
 export default function AsmaulHusnaPage() {
-  const { asmaulHusnaLearned, markAsmaulHusnaLearned, addStar } = useAppStore();
+  const { markAsmaulHusnaLearned, addStar } = useAppStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [showReward, setShowReward] = useState(false);
@@ -34,12 +34,9 @@ export default function AsmaulHusnaPage() {
     // Mark as learned and give star (only once per session)
     if (!learnedInSession.current.has(currentItem.id)) {
       learnedInSession.current.add(currentItem.id);
-      if (!asmaulHusnaLearned.includes(currentItem.id)) {
-        markAsmaulHusnaLearned(currentItem.id);
-        addStar(1);
-      }
+      if (markAsmaulHusnaLearned(currentItem.id)) addStar(1);
     }
-  }, [currentItem, asmaulHusnaLearned, markAsmaulHusnaLearned, addStar]);
+  }, [currentItem, markAsmaulHusnaLearned, addStar]);
 
   // Check if all viewed - show reward
   useEffect(() => {

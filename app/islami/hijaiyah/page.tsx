@@ -65,12 +65,9 @@ export default function HijaiyahPage() {
   useEffect(() => {
     if (currentLetter && !learnedRef.current.has(currentLetter.id)) {
       learnedRef.current.add(currentLetter.id);
-      if (!hijaiyahLearned.includes(currentLetter.id)) {
-        markHijaiyahLearned(currentLetter.id);
-        addStar(1);
-      }
+      if (markHijaiyahLearned(currentLetter.id)) addStar(1);
     }
-  }, [currentLetter, markHijaiyahLearned, addStar, hijaiyahLearned]);
+  }, [currentLetter, markHijaiyahLearned, addStar]);
 
   const goNext = useCallback(() => {
     if (currentIndex < hijaiyahLetters.length - 1) {

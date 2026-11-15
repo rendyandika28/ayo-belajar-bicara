@@ -1,6 +1,7 @@
 "use client";
 
 import { localDateKey, daysBetween } from "@/lib/date";
+import { levelForWords } from "@/lib/levels";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Word } from "@/data/words";
@@ -13,6 +14,7 @@ interface AppState {
 
   totalStars: number;
   currentLevel: number;
+  seenLevel: number;
   wordsLearned: string[];
   sessionsCompleted: number;
   hijaiyahLearned: string[];
@@ -30,11 +32,13 @@ interface AppState {
   gameStats: Record<string, number>;
 
   addStar: (count?: number) => void;
-  markWordLearned: (wordId: string) => void;
-  markHijaiyahLearned: (id: string) => void;
+  /** Returns true only when the item is new (reads live state, safe right after hydration). */
+  markWordLearned: (wordId: string) => boolean;
+  markHijaiyahLearned: (id: string) => boolean;
   markDoaAttempted: (id: string) => void;
-  markAsmaulHusnaLearned: (id: string) => void;
+  markAsmaulHusnaLearned: (id: string) => boolean;
   unlockLevel: (level: number) => void;
+  setSeenLevel: (level: number) => void;
   updateStreak: () => void;
   startSession: () => void;
   checkBreakTime: () => boolean;
@@ -70,6 +74,7 @@ function getToday(): string {
 const initialState = {
   totalStars: 0,
   currentLevel: 1,
+  seenLevel: 0,
   wordsLearned: [] as string[],
   sessionsCompleted: 0,
   hijaiyahLearned: [] as string[],
@@ -105,17 +110,18 @@ export const useAppStore = create<AppState>()(
       },
 
       markWordLearned: (wordId: string) => {
-        set((state) => {
-          if (state.wordsLearned.includes(wordId)) return state;
-          return { wordsLearned: [...state.wordsLearned, wordId] };
-        });
+        const state = get();
+        if (state.wordsLearned.includes(wordId)) return false;
+        const wordsLearned = [...state.wordsLearned, wordId];
+        set({ wordsLearned, currentLevel: Math.max(state.currentLevel, levelForWords(wordsLearned.length)) });
+        return true;
       },
 
       markHijaiyahLearned: (id: string) => {
-        set((state) => {
-          if (state.hijaiyahLearned.includes(id)) return state;
-          return { hijaiyahLearned: [...state.hijaiyahLearned, id] };
-        });
+        const { hijaiyahLearned } = get();
+        if (hijaiyahLearned.includes(id)) return false;
+        set({ hijaiyahLearned: [...hijaiyahLearned, id] });
+        return true;
       },
 
       markDoaAttempted: (id: string) => {
@@ -126,11 +132,13 @@ export const useAppStore = create<AppState>()(
       },
 
       markAsmaulHusnaLearned: (id: string) => {
-        set((state) => {
-          if (state.asmaulHusnaLearned.includes(id)) return state;
-          return { asmaulHusnaLearned: [...state.asmaulHusnaLearned, id] };
-        });
+        const { asmaulHusnaLearned } = get();
+        if (asmaulHusnaLearned.includes(id)) return false;
+        set({ asmaulHusnaLearned: [...asmaulHusnaLearned, id] });
+        return true;
       },
+
+      setSeenLevel: (level: number) => set({ seenLevel: level }),
 
       unlockLevel: (level: number) => {
         set((state) => ({

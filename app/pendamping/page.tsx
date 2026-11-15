@@ -3,22 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
-import { Word } from "@/data/words";
-import { SafeInput } from "@/components/ui/SafeInput";
 import { gameLabel } from "@/lib/games";
 import { localDateKey, daysBetween } from "@/lib/date";
-
-const categories = [
-  "hewan", "buah", "benda", "keluarga", "aktivitas", "makanan",
-  "warna", "angka", "tubuh", "alam", "peralatan",
-] as const;
-
-const levelDescriptions = [
-  { level: 1, label: "Mengenal Suara" },
-  { level: 2, label: "Meniru Suku Kata" },
-  { level: 3, label: "Gabung Suku Kata" },
-  { level: 4, label: "Kata Utuh + Kalimat" },
-];
+import { bestDayIndex, nextMilestone } from "@/lib/report";
+import { LEVELS, levelProgress } from "@/lib/levels";
 
 function getDayLabels(): string[] {
   const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
@@ -40,20 +28,11 @@ function getLast7DaysDates(): string[] {
   return dates;
 }
 
-const tabs = [
-  { key: "ringkasan", label: "Ringkasan" },
-  { key: "pengaturan", label: "Pengaturan" },
-];
-
-type Tab = "ringkasan" | "pengaturan";
-
-// Shared class strings: one surface, one primary button, one field.
+// Shared class strings: one surface, one primary button.
 const panel = "bg-surface rounded-2xl border border-line p-5 sm:p-6 min-w-0";
 const h2 = "font-heading text-lg font-semibold text-ink mb-4";
 const btnPrimary = `inline-flex items-center justify-center gap-2 bg-accent-strong text-on-accent font-heading font-semibold text-sm px-5 py-2.5 rounded-full transition-colors hover:bg-ink active:bg-ink disabled:opacity-50 disabled:cursor-not-allowed`;
 const btnQuiet = `inline-flex items-center justify-center font-heading font-semibold text-sm px-5 py-2.5 rounded-full border border-line text-ink transition-colors hover:bg-paper active:bg-line disabled:opacity-50`;
-const field = `w-full bg-surface border border-line rounded-xl px-3 py-2.5 font-body text-base text-ink placeholder:text-ink-muted transition-colors hover:border-ink-muted disabled:opacity-50`;
-const label = "font-body text-sm text-ink-muted block mb-1.5";
 
 function Bar({ value, max, tone }: { value: number; max: number; tone: string }) {
   const pct = Math.min(100, (value / max) * 100);
@@ -77,22 +56,13 @@ export default function PendampingPage() {
   const asmaulHusnaLearned = useAppStore((s) => s.asmaulHusnaLearned);
   const weeklyMinutes = useAppStore((s) => s.weeklyMinutes);
   const gameStats = useAppStore((s) => s.gameStats);
-  const customWords = useAppStore((s) => s.customWords);
   const sessionDuration = useAppStore((s) => s.sessionDuration);
-  const addCustomWord = useAppStore((s) => s.addCustomWord);
-  const removeCustomWord = useAppStore((s) => s.removeCustomWord);
   const setSessionDuration = useAppStore((s) => s.setSessionDuration);
   const resetProgress = useAppStore((s) => s.resetProgress);
   const updateStreak = useAppStore((s) => s.updateStreak);
   // Roll the day over here too, so a deep link on a new day doesn't show yesterday as today.
   useEffect(() => { updateStreak(); }, [updateStreak]);
 
-  const [activeTab, setActiveTab] = useState<Tab>("ringkasan");
-  const [emoji, setEmoji] = useState("");
-  const [kata, setKata] = useState("");
-  const [sukuKata, setSukuKata] = useState("");
-  const [kategori, setKategori] = useState<Word["category"]>("benda");
-  const [kesulitan, setKesulitan] = useState<1 | 2 | 3>(1);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const dayLabels = getDayLabels();
@@ -106,40 +76,46 @@ export default function PendampingPage() {
     const diffDays = daysBetween(date, lastActiveDate);
     return diffDays >= 0 && diffDays < dailyStreak;
   });
+  const activeDays = streakDays.filter(Boolean).length;
+  const weekTotal = weeklyMinutes.reduce((a, b) => a + b, 0);
+  const bestIdx = bestDayIndex(chartMinutes);
+  const insight = bestIdx < 0
+    ? "Belum ada kegiatan minggu ini."
+    : `Paling rajin hari ${dayLabels[bestIdx]}, ${chartMinutes[bestIdx]} menit.`;
+  const milestone = nextMilestone(dailyStreak);
+  const playedToday = streakDays[6] && todayMinutes > 0;
+  const goal = Math.max(sessionDuration, 1);
+  const goalPct = Math.min(1, todayMinutes / goal);
+  const goalDone = goalPct >= 1;
+  const streakMessage = dailyStreak === 0
+    ? "Mulai rutinitas hari ini. Cukup beberapa menit."
+    : playedToday
+      ? `Hebat! Rutinitas ${dailyStreak} hari terjaga.`
+      : "Belum main hari ini. Main sebentar supaya rutinitas tidak putus.";
 
-  const handleAddWord = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emoji.trim() || !kata.trim() || !sukuKata.trim()) return;
-
-    const newWord: Word = {
-      id: "custom-" + Date.now(),
-      emoji: emoji.trim(),
-      word: kata.trim().toLowerCase(),
-      syllables: sukuKata.split(",").map((s) => s.trim()).filter(Boolean),
-      category: kategori,
-      difficulty: kesulitan,
-    };
-
-    addCustomWord(newWord);
-    setEmoji("");
-    setKata("");
-    setSukuKata("");
-    setKategori("benda");
-    setKesulitan(1);
-  };
-
-  const todayFigures = [
-    { value: todayStars, label: "Bintang" },
+  const figures = [
+    { value: todayStars, label: "Bintang hari ini" },
     { value: wordsLearned.length, label: "Kata dipelajari" },
     { value: sessionsCompleted, label: "Sesi selesai" },
-    { value: todayMinutes, label: "Waktu (menit)" },
+    { value: weekTotal, label: "Menit minggu ini" },
   ];
 
+  const copyReport = async () => {
+    const text = `*Laporan Belajar ${new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}*\n\n🔥 Rutinitas: ${dailyStreak} hari berturut-turut\n🎯 Target hari ini: ${todayMinutes}/${goal} menit\n⭐ Bintang hari ini: ${todayStars}\n📚 Kata dipelajari: ${wordsLearned.length}\n✅ Sesi selesai: ${sessionsCompleted}\n📅 Minggu ini: ${weekTotal} menit, aktif ${activeDays}/7 hari\n💡 ${insight}\n\n-- Ayo Belajar Bicara!`;
+    try {
+      await navigator.clipboard.writeText(text);
+      alert("Laporan disalin! Tempel ke WhatsApp untuk dibagikan 📱");
+    } catch {
+      alert("Gagal menyalin laporan. Coba lagi.");
+    }
+  };
+
+  const lvl = levelProgress(wordsLearned.length, currentLevel);
   const favorites = Object.entries(gameStats).sort((a, b) => b[1] - a[1]).slice(0, 3);
 
   return (
     <div className="min-h-screen bg-paper text-ink">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 pb-16">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 pb-16">
         {/* Header */}
         <header className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 min-w-0">
@@ -157,120 +133,97 @@ export default function PendampingPage() {
               Pendamping
             </h1>
           </div>
-
-          {/* Tab Bar */}
-          <div role="group" aria-label="Bagian pendamping" className="inline-flex gap-1 bg-surface rounded-full p-1 border border-line">
-            {tabs.map((tab) => {
-              const selected = activeTab === tab.key;
-              return (
-                <button
-                  key={tab.key}
-                  aria-pressed={selected}
-                  onClick={() => setActiveTab(tab.key as Tab)}
-                  className={`px-4 sm:px-5 py-2 rounded-full font-heading text-sm font-semibold transition-colors ${
-                    selected
-                      ? "bg-accent-strong text-on-accent"
-                      : "text-ink-muted hover:text-ink hover:bg-paper active:bg-line"
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
         </header>
 
-        {/* Ringkasan Tab */}
-        {activeTab === "ringkasan" && (
+        {/* Ringkasan + pengaturan dalam satu halaman */}
           <div className="pd-fade grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Hari Ini — signature */}
+            {/* Laporan ala Duolingo: rutinitas + target harian + rekap minggu */}
             <section className={`${panel} md:col-span-2`}>
-              <h2 className={h2}>Hari Ini</h2>
-              <dl className="grid grid-cols-2 sm:grid-cols-4 gap-y-5">
-                {todayFigures.map((f, i) => (
-                  <div
-                    key={f.label}
-                    className={`flex flex-col-reverse px-1 sm:px-5 min-w-0 ${i % 2 === 1 ? "border-l border-line pl-4" : ""} ${i > 0 ? "sm:border-l sm:border-line" : "sm:pl-0"}`}
-                  >
-                    <dt className="font-body text-sm text-ink-muted mt-2">{f.label}</dt>
-                    <dd className="font-heading text-4xl sm:text-5xl font-bold text-ink tabular-nums leading-none">{f.value}</dd>
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h2 className="font-heading text-lg font-semibold text-ink">Laporan</h2>
+                <button onClick={copyReport} className={btnPrimary}>Salin Laporan</button>
+              </div>
+
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-4 items-start">
+                {/* Rutinitas */}
+                <div className="min-w-0">
+                  <p className="flex items-center gap-2">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={dailyStreak > 0 ? "text-warn" : "text-line"}>
+                      <path d="M12 21c-4 0-6.5-2.6-6.5-6 0-3.5 3-5.5 3.5-9 2 1.2 3 3 3 5 1-1 1.5-2.2 1.5-3.5 2.6 1.8 5 4.6 5 7.5 0 3.4-2.5 6-6.5 6Z" />
+                    </svg>
+                    <span className="font-heading text-4xl font-bold text-ink tabular-nums leading-none">{dailyStreak}</span>
+                    <span className="font-body text-base text-ink-muted">hari berturut-turut</span>
+                  </p>
+                  <p className="font-body text-sm text-ink mt-2">{streakMessage}</p>
+                  {milestone && dailyStreak > 0 && (
+                    <p className="font-body text-sm text-ink-muted mt-0.5">{milestone - dailyStreak} hari lagi menuju {milestone} hari.</p>
+                  )}
+                  <ol className="flex gap-1.5 mt-3" aria-label="Aktif 7 hari terakhir">
+                    {last7Days.map((date, i) => (
+                      <li key={date} className="flex flex-col items-center gap-1">
+                        <span className={`w-7 h-7 rounded-full flex items-center justify-center ${streakDays[i] ? "bg-good-strong text-on-accent" : i === 6 ? "border-2 border-dashed border-ink-muted" : "bg-paper border border-line"}`}>
+                          {streakDays[i] && (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M5 12.5l4.5 4.5L19 7.5" />
+                            </svg>
+                          )}
+                        </span>
+                        <span className={`font-body text-xs ${i === 6 ? "text-ink font-semibold" : "text-ink-muted"}`}>
+                          {dayLabels[i]}
+                          <span className="sr-only">{streakDays[i] ? " aktif" : " tidak aktif"}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
+                {/* Target harian */}
+                <div className="flex flex-col items-center">
+                  <div className="relative w-24 h-24" role="img" aria-label={`Target harian ${todayMinutes} dari ${goal} menit`}>
+                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90" aria-hidden="true">
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="var(--line)" strokeWidth="3.5" />
+                      <circle
+                        cx="18" cy="18" r="15.5" fill="none"
+                        stroke={goalDone ? "var(--good-strong)" : "var(--accent-strong)"}
+                        strokeWidth="3.5" strokeLinecap="round"
+                        strokeDasharray={`${goalPct * 97.4} 97.4`}
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex flex-col items-center justify-center leading-none" aria-hidden="true">
+                      <span className="font-heading text-2xl font-bold text-ink tabular-nums">{todayMinutes}</span>
+                      <span className="font-body text-xs text-ink-muted mt-0.5">/{goal} mnt</span>
+                    </span>
+                  </div>
+                  <span className={`font-body text-sm mt-1.5 ${goalDone ? "text-good-strong font-semibold" : "text-ink-muted"}`}>
+                    {goalDone ? "Target tercapai" : "Target hari ini"}
+                  </span>
+                </div>
+              </div>
+
+              <dl className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-5">
+                {figures.map((f) => (
+                  <div key={f.label} className="flex flex-col-reverse bg-paper rounded-xl px-3 py-2 min-w-0">
+                    <dt className="font-body text-sm text-ink-muted mt-1">{f.label}</dt>
+                    <dd className="font-heading text-2xl font-bold text-ink tabular-nums leading-none">{f.value}</dd>
                   </div>
                 ))}
               </dl>
-            </section>
 
-            {/* Rutinitas Harian */}
-            <section className={panel}>
-              <h2 className={h2}>Rutinitas Harian</h2>
-              <p className="mb-5">
-                <span className="font-heading text-4xl font-bold text-ink tabular-nums">{dailyStreak}</span>
-                <span className="font-body text-base text-ink-muted ml-2">hari berturut-turut</span>
-              </p>
-              <ol className="grid grid-cols-7 gap-1">
-                {last7Days.map((date, i) => {
-                  const isActive = streakDays[i];
-                  return (
-                    <li key={date} className="flex flex-col items-center gap-1.5">
-                      <span
-                        className={`w-9 h-9 rounded-full flex items-center justify-center ${isActive ? "bg-good-strong text-on-accent" : "bg-paper border border-line"}`}
-                      >
-                        {isActive && (
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M5 12.5l4.5 4.5L19 7.5" />
-                          </svg>
-                        )}
-                        <span className="sr-only">{isActive ? "aktif" : "tidak aktif"}</span>
-                      </span>
-                      <span className="font-body text-xs text-ink-muted">{dayLabels[i]}</span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </section>
-
-            {/* Waktu Belajar */}
-            <section className={panel}>
-              <h2 className={h2}>Waktu Belajar</h2>
-              <div className="flex items-end justify-between gap-2 h-40">
-                {chartMinutes.map((minutes, index) => {
-                  const heightPct = maxMinutes > 0 ? (minutes / maxMinutes) * 100 : 0;
-                  return (
-                    <div key={dayLabels[index]} className="flex-1 flex flex-col items-center gap-1 h-full justify-end min-w-0">
-                      {minutes > 0 && <span className="font-body text-xs text-ink-muted tabular-nums">{minutes}</span>}
-                      <div
-                        className={`w-full max-w-[36px] rounded-t-md ${index === chartMinutes.length - 1 ? "bg-accent-strong" : "bg-accent-muted"}`}
-                        style={{ height: `${Math.max(heightPct, minutes > 0 ? 8 : 0)}%` }}
-                      />
-                      <span className="font-body text-xs text-ink-muted">{dayLabels[index]}</span>
-                    </div>
-                  );
-                })}
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mt-5 mb-2">
+                <h3 className="font-body text-sm text-ink-muted">Menit per hari, aktif {activeDays} dari 7 hari</h3>
+                <p className="font-body text-sm text-ink">{insight}</p>
               </div>
-            </section>
-
-            {/* Level Belajar */}
-            <section className={`${panel} md:col-span-2`}>
-              <h2 className={h2}>Level Belajar</h2>
-              <ol className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                {levelDescriptions.map(({ level, label: lvl }) => {
-                  const isCurrent = level === currentLevel;
-                  const isUnlocked = level <= currentLevel;
-                  return (
-                    <li
-                      key={level}
-                      aria-current={isCurrent ? "step" : undefined}
-                      className={`rounded-xl p-4 border-2 ${isCurrent ? "border-accent bg-accent-soft" : isUnlocked ? "border-line" : "border-dashed border-line opacity-60"}`}
-                    >
-                      <div className="flex items-center justify-between font-heading text-sm font-semibold text-ink">
-                        <span>Level {level}</span>
-                        <span className="font-body text-xs font-normal text-ink-muted">
-                          {isCurrent ? "Sekarang" : isUnlocked ? "Selesai" : "Terkunci"}
-                        </span>
-                      </div>
-                      <div className="font-body text-sm text-ink-muted mt-1">{lvl}</div>
-                    </li>
-                  );
-                })}
+              <ol className="flex items-end justify-between gap-2 h-24">
+                {chartMinutes.map((minutes, index) => (
+                  <li key={dayLabels[index]} className="flex-1 flex flex-col items-center gap-1 h-full justify-end min-w-0">
+                    {minutes > 0 && <span className="font-body text-xs text-ink-muted tabular-nums">{minutes}</span>}
+                    <div
+                      className={`w-full max-w-[36px] rounded-t-md ${index === bestIdx ? "bg-accent-strong" : "bg-accent-muted"}`}
+                      style={{ height: `${Math.max((minutes / maxMinutes) * 100, minutes > 0 ? 8 : 0)}%` }}
+                    />
+                    <span className="font-body text-xs text-ink-muted">{dayLabels[index]}</span>
+                  </li>
+                ))}
               </ol>
             </section>
 
@@ -312,118 +265,79 @@ export default function PendampingPage() {
               </div>
             </section>
 
-            {/* Tips Pendampingan */}
+            {/* Level Belajar: posisi sekarang, kenapa terkunci, cara naik */}
             <section className={`${panel} md:col-span-2`}>
-              <h2 className={h2}>Tips Pendampingan</h2>
-              <ol className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 list-decimal list-inside marker:font-heading marker:text-accent">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-3">
+                <h2 className="font-heading text-lg font-semibold text-ink">
+                  Level {lvl.current.level}: {lvl.current.name}
+                </h2>
+                <span className="font-body text-sm text-ink-muted tabular-nums">
+                  {lvl.next ? `${wordsLearned.length}/${lvl.next.minWords} kata menuju Level ${lvl.next.level}` : `${wordsLearned.length} kata dipelajari`}
+                </span>
+              </div>
+              <Bar value={lvl.pct} max={1} tone="bg-accent-strong" />
+              <p className="font-body text-base text-ink mt-3">
+                {lvl.next
+                  ? <>Pelajari <strong>{lvl.need} kata lagi</strong> untuk naik level. Kata dihitung saat anak membuka kartu di Kartu Kata atau berhasil mengucapkan di Ayo Ngomong.</>
+                  : "Level tertinggi tercapai. Terus latih kalimat bersama si kecil."}
+              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                <span className="font-body text-sm text-ink-muted">Coba:</span>
+                {lvl.current.games.map((slug) => (
+                  <Link key={slug} href={`/${slug}`} className="inline-flex items-center min-h-[44px] px-4 rounded-full bg-accent-soft text-accent-strong font-heading text-sm font-semibold transition-colors hover:bg-line active:bg-line">
+                    {gameLabel(slug)}
+                  </Link>
+                ))}
+              </div>
+              <ol className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
+                {LEVELS.map((l) => {
+                  const done = l.level < lvl.current.level;
+                  const now = l.level === lvl.current.level;
+                  return (
+                    <li
+                      key={l.level}
+                      aria-current={now ? "step" : undefined}
+                      className={`flex items-center gap-2 rounded-xl px-3 py-2 min-w-0 ${now ? "bg-accent-soft" : "bg-paper"}`}
+                    >
+                      <span className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center font-heading text-sm font-bold ${done ? "bg-good-strong text-on-accent" : now ? "bg-accent-strong text-on-accent" : "border border-line text-ink-muted"}`}>
+                        {done ? (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                        ) : now ? l.level : (
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-body text-sm text-ink leading-tight">{l.name}</span>
+                        <span className="block font-body text-xs text-ink-muted">
+                          {done ? "Selesai" : now ? "Sekarang" : `Terbuka di ${l.minWords} kata`}
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+
+            {/* Tips Pendampingan */}
+            <details className={`${panel} md:col-span-2 group`}>
+              <summary className="font-heading text-lg font-semibold text-ink cursor-pointer list-none flex items-center justify-between gap-3 min-h-[44px] -my-2">
+                Tips Pendampingan
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-ink-muted group-open:rotate-180">
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </summary>
+              <ol className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 list-decimal list-inside marker:font-heading marker:text-accent">
                 <li className="font-body text-base text-ink leading-relaxed">Ucapkan kata bersama anak. <strong>Contohkan langsung</strong> dengan mulut Anda.</li>
                 <li className="font-body text-base text-ink leading-relaxed">Beri jeda 3-5 detik setelah bertanya. <strong>Tunggu anak merespons</strong>.</li>
                 <li className="font-body text-base text-ink leading-relaxed">Jika anak salah, jangan koreksi langsung. <strong>Ulangi dengan benar</strong>.</li>
                 <li className="font-body text-base text-ink leading-relaxed"><strong>Puji setiap usaha</strong> anak, bukan hanya hasil sempurna.</li>
               </ol>
-            </section>
+            </details>
 
-            {/* Laporan Mingguan */}
-            <section className={`${panel} md:col-span-2 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-5 md:items-end`}>
-              <div className="min-w-0">
-                <h2 className={h2}>Laporan Mingguan</h2>
-                <pre className="font-body text-sm text-ink whitespace-pre-wrap leading-relaxed bg-paper rounded-xl p-4">
-                  {`✨ Laporan Belajar ${new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-
-⭐ Bintang hari ini: ${todayStars}
-📚 Kata dipelajari: ${wordsLearned.length} kata
-✅ Sesi belajar: ${sessionsCompleted} kali
-⏱️ Waktu belajar: ${todayMinutes} menit
-🔥 Streak: ${dailyStreak} hari berturut-turut`}
-                </pre>
-              </div>
-              <button
-                onClick={async () => {
-                  const text = `*Laporan Belajar ${new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}*\n\n⭐ Bintang: ${todayStars}\n📚 Kata: ${wordsLearned.length}\n✅ Sesi: ${sessionsCompleted}\n⏱️ Waktu: ${todayMinutes} menit\n🔥 Streak: ${dailyStreak} hari\n\n-- Ayo Belajar Bicara!`;
-                  try {
-                    await navigator.clipboard.writeText(text);
-                    alert("Laporan disalin! Tempel ke WhatsApp untuk dibagikan 📱");
-                  } catch {
-                    alert("Gagal menyalin. Tekan lama teks laporan di atas lalu pilih Salin.");
-                  }
-                }}
-                className={btnPrimary}
-              >
-                Salin Laporan
-              </button>
-            </section>
-          </div>
-        )}
-
-        {/* Pengaturan Tab */}
-        {activeTab === "pengaturan" && (
-          <div className="pd-fade grid grid-cols-1 gap-5">
-            {/* Tambah Kata Baru */}
+            {/* Durasi Sesi = target harian */}
             <section className={panel}>
-              <h2 className={h2}>Tambah Kata Baru</h2>
-              <form onSubmit={handleAddWord} className="space-y-5">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="pd-emoji" className={label}>Emoji</label>
-                    <SafeInput id="pd-emoji" type="text" value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="tempel satu emoji" className={field} />
-                  </div>
-                  <div>
-                    <label htmlFor="pd-kata" className={label}>Kata</label>
-                    <SafeInput id="pd-kata" type="text" value={kata} onChange={(e) => setKata(e.target.value)} placeholder="contoh: apel" className={field} />
-                  </div>
-                  <div>
-                    <label htmlFor="pd-suku" className={label}>Suku Kata</label>
-                    <SafeInput id="pd-suku" type="text" value={sukuKata} onChange={(e) => setSukuKata(e.target.value)} placeholder="pisahkan dengan koma, contoh: a, pel" className={field} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label htmlFor="pd-kategori" className={label}>Kategori</label>
-                      <select id="pd-kategori" value={kategori} onChange={(e) => setKategori(e.target.value as Word["category"])} className={field}>
-                        {categories.map((cat) => <option key={cat} value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label htmlFor="pd-kesulitan" className={label}>Kesulitan</label>
-                      <select id="pd-kesulitan" value={kesulitan} onChange={(e) => setKesulitan(Number(e.target.value) as 1 | 2 | 3)} className={field}>
-                        <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <button type="submit" className={btnPrimary}>Tambah Kata</button>
-              </form>
-
-              {customWords.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="font-heading text-base font-semibold text-ink mb-2">Kata Custom ({customWords.length})</h3>
-                  <ul className="divide-y divide-line border-y border-line">
-                    {customWords.map((word) => (
-                      <li key={word.id} className="flex items-center justify-between gap-3 py-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-xl flex-shrink-0" aria-hidden="true">{word.emoji}</span>
-                          <div className="min-w-0">
-                            <span className="font-heading text-base font-semibold text-ink">{word.word}</span>
-                            <span className="font-body text-sm text-ink-muted ml-2">[{word.syllables.join(" - ")}]</span>
-                          </div>
-                          <span className="font-body text-sm text-ink-muted">{word.category}</span>
-                        </div>
-                        <button
-                          onClick={() => removeCustomWord(word.id)}
-                          className={`text-danger-strong font-body text-sm px-3 py-1.5 rounded-full transition-colors hover:bg-danger-soft active:bg-line`}
-                        >
-                          Hapus
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </section>
-
-            {/* Durasi Sesi */}
-            <section className={panel}>
-              <h2 className="font-heading text-lg font-semibold text-ink mb-1">Durasi Sesi Belajar</h2>
-              <p className="font-body text-base text-ink-muted mb-5">Atur berapa lama anak belajar dalam satu sesi. Sesi ideal: 10-15 menit.</p>
+              <h2 className="font-heading text-lg font-semibold text-ink mb-1">Target Harian</h2>
+              <p className="font-body text-base text-ink-muted mb-5">Berapa menit anak belajar dalam satu sesi. Ideal: 10-15 menit.</p>
               <div className="flex items-center gap-6">
                 <div className="flex-1 min-w-0">
                   <input
@@ -476,7 +390,6 @@ export default function PendampingPage() {
               )}
             </section>
           </div>
-        )}
       </div>
     </div>
   );

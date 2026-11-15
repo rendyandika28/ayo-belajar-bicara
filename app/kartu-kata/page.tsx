@@ -15,7 +15,6 @@ export default function KartuKataPage() {
     markWordLearned,
     addStar,
     customWords,
-    wordsLearned,
     recordGamePlay,
   } = useAppStore();
 
@@ -45,12 +44,10 @@ export default function KartuKataPage() {
   useEffect(() => {
     if (currentWord && !learnedRef.current.has(currentWord.id)) {
       learnedRef.current.add(currentWord.id);
-      markWordLearned(currentWord.id);
-      if (!wordsLearned.includes(currentWord.id)) {
-        addStar(1);
-      }
+      // Store decides "new" from live state; the render snapshot is empty right after a refresh.
+      if (markWordLearned(currentWord.id)) addStar(1);
     }
-  }, [currentWord, markWordLearned, addStar, wordsLearned]);
+  }, [currentWord, markWordLearned, addStar]);
 
   const goNext = useCallback(() => {
     if (currentIndex < allWords.length - 1) {

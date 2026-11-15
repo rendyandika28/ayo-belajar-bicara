@@ -18,6 +18,8 @@ export default function DoaHarianPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const recognitionRef = useRef<ReturnType<typeof createSpeechRecognition>>(null);
+  // Speech can fire onresult more than once per attempt; award the stars once.
+  const successRef = useRef(false);
 
   const selectedDoa = selectedDoaId
     ? dailyDoas.find((d) => d.id === selectedDoaId) || null
@@ -27,6 +29,7 @@ export default function DoaHarianPage() {
     playPop();
     setSelectedDoaId(doaId);
     setShowSuccess(false);
+    successRef.current = false;
     setIsListening(false);
   }, []);
 
@@ -34,6 +37,7 @@ export default function DoaHarianPage() {
     playPop();
     setSelectedDoaId(null);
     setShowSuccess(false);
+    successRef.current = false;
     setIsListening(false);
     if (recognitionRef.current) {
       recognitionRef.current.abort();
@@ -51,7 +55,8 @@ export default function DoaHarianPage() {
   }, []);
 
   const handleSuccess = useCallback(() => {
-    if (!selectedDoa) return;
+    if (!selectedDoa || successRef.current) return;
+    successRef.current = true;
     setShowSuccess(true);
     setShowConfetti(true);
     setIsListening(false);

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { MotionConfig, MotionGlobalConfig } from "framer-motion";
 import FocusModeWrapper from "@/components/focus/FocusModeWrapper";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
+import LevelNotice from "@/components/LevelNotice";
 import { useAppStore } from "@/store/useAppStore";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -85,6 +86,7 @@ export default function ClientLayout({
     // Calm mode (or the OS reduced-motion setting) turns off every framer-motion animation.
     <MotionConfig reducedMotion={calmMode ? "always" : "user"}>
       <OnboardingOverlay />
+      <LevelNotice />
       {children}
       <FocusModeWrapper />
 

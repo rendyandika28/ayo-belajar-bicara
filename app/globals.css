@@ -77,6 +77,12 @@ body {
   will-change: transform;
 }
 
+/* Loading skeleton: soft opacity pulse */
+@keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.skeleton { animation: skeleton-pulse 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+body.calm-mode-active .skeleton { animation: none; }
+
 /* Every keyframe animation above: off for reduced motion and calm mode */
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse-mic, .animate-star-bounce { animation: none !important; }
