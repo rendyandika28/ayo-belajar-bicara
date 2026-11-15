@@ -268,3 +268,36 @@ describe("recorded voice", () => {
     vi.doUnmock("@/lib/audioManifest.json");
   });
 });
+
+describe("speakSyllable with word context", () => {
+  async function setup(manifest: string[]) {
+    vi.resetModules();
+    vi.doMock("@/lib/audioManifest.json", () => ({ default: manifest }));
+    const created: string[] = [];
+    vi.stubGlobal("Audio", vi.fn(function (this: { play: () => Promise<void>; pause: () => void }, src: string) {
+      created.push(src);
+      this.play = () => Promise.resolve();
+      this.pause = () => {};
+    }));
+    Object.defineProperty(globalThis, "speechSynthesis", {
+      value: { speak: vi.fn(), cancel: vi.fn(), getVoices: vi.fn(() => []), speaking: false, pending: false },
+      writable: true,
+      configurable: true,
+    });
+    const mod = await import("@/lib/speech");
+    return { ...mod, created };
+  }
+  afterEach(() => { vi.unstubAllGlobals(); vi.doUnmock("@/lib/audioManifest.json"); });
+
+  it("prefers the recording made inside the word", async () => {
+    const { speakSyllable, created } = await setup(["ja", "ja--jalan"]);
+    speakSyllable("ja", undefined, "jalan");
+    expect(created).toEqual(["/audio/ja--jalan.mp3"]);
+  });
+
+  it("falls back to the plain syllable recording", async () => {
+    const { speakSyllable, created } = await setup(["ja"]);
+    speakSyllable("ja", undefined, "jalan");
+    expect(created).toEqual(["/audio/ja.mp3"]);
+  });
+});

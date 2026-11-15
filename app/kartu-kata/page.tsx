@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { asset } from "@/lib/asset";
+import AssetImage from "@/components/ui/AssetImage";
 import { motion, AnimatePresence } from "framer-motion";
 import { speak, speakSyllable } from "@/lib/speech";
 import { words, categories } from "@/data/words";
@@ -74,9 +74,9 @@ export default function KartuKataPage() {
   }, [currentWord]);
 
   const handleSyllableTap = useCallback((syllable: string) => {
-    speakSyllable(syllable);
+    speakSyllable(syllable, undefined, currentWord?.word);
     playPop();
-  }, []);
+  }, [currentWord]);
 
   // Swipe support for mobile
   const touchStartX = useRef(0);
@@ -132,8 +132,7 @@ export default function KartuKataPage() {
                   : "bg-surface border-line text-ink-muted hover:bg-accent-soft"
               }`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={asset(cat.image)} alt="" aria-hidden="true" className="w-7 h-7 rounded-full object-cover bg-paper -ml-1.5" />
+              <AssetImage src={cat.image} eager className="w-7 h-7 rounded-full -ml-1.5 shrink-0" />
               <span>{cat.label}</span>
             </button>
           ))}

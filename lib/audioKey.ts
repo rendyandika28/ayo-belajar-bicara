@@ -14,3 +14,8 @@ export function audioKey(text: string): string {
   for (const c of norm) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0;
   return `${norm.slice(0, 48)}-${h.toString(36)}`;
 }
+
+/** Recording of syllable `syl` as pronounced inside `word`, e.g. "ja--jalan". */
+export function syllableKey(syl: string, word: string): string {
+  return `${audioKey(syl)}--${audioKey(word)}`;
+}

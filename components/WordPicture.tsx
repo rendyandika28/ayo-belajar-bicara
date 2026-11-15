@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { asset } from "@/lib/asset";
+import AssetImage from "@/components/ui/AssetImage";
 import type { Word } from "@/data/words";
 
 /**
@@ -19,7 +19,7 @@ export default function WordPicture({
   emojiClassName?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const src = asset(word.image ?? `/images/words/${word.id}.webp`);
+  const src = word.image ?? `/images/words/${word.id}.webp`;
 
   if (failed) {
     return (
@@ -29,9 +29,6 @@ export default function WordPicture({
     );
   }
   return (
-    <div className={`${className} rounded-2xl overflow-hidden bg-paper`}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" decoding="async" onError={() => setFailed(true)} className="w-full h-full object-cover" />
-    </div>
+    <AssetImage src={src} eager onError={() => setFailed(true)} className={`${className} rounded-2xl`} />
   );
 }

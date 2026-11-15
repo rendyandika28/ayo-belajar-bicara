@@ -5,10 +5,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
 import { words, Word } from "@/data/words";
 import { speak, speakSyllable } from "@/lib/speech";
-import { playPop, playCorrect, playApplause } from "@/lib/sounds";
+import { playPop, playCorrect, playWrong, playApplause } from "@/lib/sounds";
+import { planSession, isCorrect, type Tile } from "@/lib/susunSuku";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
 import GameTutorial from "@/components/GameTutorial";
+import WordPicture from "@/components/WordPicture";
+import AssetImage from "@/components/ui/AssetImage";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -19,7 +22,7 @@ const SINGLE_SYLLABLES = [
 
 const MERGE_SESSION_SIZE = 8;
 
-type Mode = null | "single" | "merge" | "full";
+type Mode = null | "single" | "merge" | "build";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -138,25 +141,25 @@ function ModeSelection({ onSelect }: { onSelect: (mode: Mode) => void }) {
     mode: Mode;
     label: string;
     desc: string;
-    icon: React.ReactNode;
+    image: string;
   }[] = [
     {
       mode: "single",
       label: "Suku Kata Tunggal",
       desc: "Belajar satu suku kata",
-      icon: <span className="font-heading text-2xl font-bold">ba</span>,
+      image: "/images/ui/mode-single.webp",
     },
     {
       mode: "merge",
       label: "Gabung Suku Kata",
       desc: "Gabungkan suku kata jadi kata",
-      icon: <LinkIcon />,
+      image: "/images/ui/mode-merge.webp",
     },
     {
-      mode: "full",
-      label: "Kata Utuh",
-      desc: "Belajar kata lengkap",
-      icon: <span className="font-heading text-xl font-bold">bola</span>,
+      mode: "build",
+      label: "Susun Suku Kata",
+      desc: "Susun potongan jadi kata",
+      image: "/images/ui/mode-full.webp",
     },
   ];
 
@@ -170,21 +173,20 @@ function ModeSelection({ onSelect }: { onSelect: (mode: Mode) => void }) {
       <h2 className="text-2xl font-heading font-bold text-ink text-center">
         Pilih Mode Belajar
       </h2>
-      <div className="flex flex-col gap-3 w-full max-w-md">
+      {/* Same card shape as the home game grid: picture on top, label + one line below. */}
+      <div className="grid grid-cols-1 min-[420px]:grid-cols-3 gap-3 sm:gap-4 w-full">
         {modeCards.map((card) => (
           <button
             key={card.mode}
             onClick={() => onSelect(card.mode)}
-            className="bg-surface border border-line rounded-3xl p-5 flex items-center gap-4 min-h-[96px] w-full text-left hover:bg-accent-soft active:bg-line transition-colors"
+            className="bg-surface border border-line rounded-3xl p-3 flex min-[420px]:flex-col items-center min-[420px]:items-stretch gap-3 w-full min-w-0 text-left hover:bg-accent-soft active:bg-line transition-colors"
           >
-            <span className="flex-shrink-0 inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-accent-soft text-accent-strong" aria-hidden="true">
-              {card.icon}
-            </span>
-            <div>
-              <h3 className="text-xl font-heading font-semibold text-ink">
+            <AssetImage src={card.image} eager className="w-20 h-20 shrink-0 min-[420px]:w-full min-[420px]:h-auto min-[420px]:aspect-square rounded-2xl" />
+            <div className="min-w-0 min-[420px]:px-1 min-[420px]:pb-1">
+              <h3 className="text-lg sm:text-xl font-heading font-semibold text-ink leading-tight">
                 {card.label}
               </h3>
-              <p className="text-base font-body text-ink-muted">{card.desc}</p>
+              <p className="text-sm font-body text-ink-muted leading-snug mt-1">{card.desc}</p>
             </div>
           </button>
         ))}
@@ -302,9 +304,9 @@ function ModeMerge({ onBack }: { onBack: () => void }) {
 
   const handleTapSyllable = useCallback(
     (syllable: string) => {
-      if (!merged) speakSyllable(syllable);
+      if (!merged) speakSyllable(syllable, undefined, currentWord?.word);
     },
-    [merged]
+    [merged, currentWord]
   );
 
   const handleMerge = useCallback(() => {
@@ -353,20 +355,8 @@ function ModeMerge({ onBack }: { onBack: () => void }) {
       <ProgressBar current={index + 1} total={total} />
 
       <div className="flex flex-col items-center gap-6">
-        {/* Emoji (shown after merge) */}
-        <AnimatePresence>
-          {merged && (
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.25 }}
-              className="text-7xl leading-none"
-              aria-hidden="true"
-            >
-              {currentWord.emoji}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Word picture: full colour from the start; fixed size, so nothing jumps on merge. */}
+        <WordPicture key={currentWord.id} word={currentWord} className="w-36 h-36 sm:w-44 sm:h-44" />
 
         {/* Syllable boxes */}
         <div className="flex items-center gap-3">
@@ -424,44 +414,76 @@ function ModeMerge({ onBack }: { onBack: () => void }) {
   );
 }
 
-// ─── Mode 3: Kata Utuh ─────────────────────────────────────────────────────
+// ─── Mode 3: Susun Suku Kata ───────────────────────────────────────────────
+// Duolingo-style: tap shuffled syllable tiles in order into the answer slots.
 
-function ModeFull({ onBack }: { onBack: () => void }) {
+function ModeBuild({ onBack }: { onBack: () => void }) {
   const addStar = useAppStore((s) => s.addStar);
+  const incrementSession = useAppStore((s) => s.incrementSession);
 
-  const allWords = useMemo(() => shuffleArray(words), []);
-  const total = allWords.length;
-
+  const [rounds] = useState(() => planSession(words));
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState(1);
+  const [answer, setAnswer] = useState<Tile[]>([]);
+  const [status, setStatus] = useState<"playing" | "correct" | "wrong">("playing");
+  const [missed, setMissed] = useState(false); // a wrong try on this word
   const [completed, setCompleted] = useState(false);
 
-  const currentWord: Word | undefined = allWords[index];
+  const round = rounds[index];
+  const total = rounds.length;
+  const slots = round?.word.syllables.length ?? 0;
+  const locked = status !== "playing";
 
-  // Auto-play full word when shown
+  // Say the word when a new question appears (the hint the child builds towards).
   useEffect(() => {
-    if (!completed && currentWord) {
-      const timeout = setTimeout(() => {
-        speak(currentWord.word);
-      }, 400);
-      return () => clearTimeout(timeout);
+    if (!completed && round) {
+      const t = setTimeout(() => speak(round.word.word), 400);
+      return () => clearTimeout(t);
     }
-  }, [index, completed, currentWord]);
+  }, [index, completed, round]);
 
-  const handleListen = useCallback(() => {
-    if (currentWord) speak(currentWord.word);
-  }, [currentWord]);
-
-  const handleNext = useCallback(() => {
-    playPop();
-    addStar(1);
-    if (index + 1 >= total) {
-      setCompleted(true);
+  const check = useCallback((next: Tile[]) => {
+    if (!round) return;
+    if (isCorrect(next.map((t) => t.text), round.word)) {
+      setStatus("correct");
+      playCorrect();
+      addStar(missed ? 1 : 2);
+      setTimeout(() => speak(round.word.word), 300);
+      setTimeout(() => {
+        if (index + 1 >= total) {
+          incrementSession();
+          setCompleted(true);
+        } else {
+          setIndex((i) => i + 1);
+          setAnswer([]);
+          setMissed(false);
+          setStatus("playing");
+        }
+      }, 1600);
     } else {
-      setDirection(1);
-      setIndex((prev) => prev + 1);
+      setStatus("wrong");
+      setMissed(true);
+      playWrong();
+      setTimeout(() => {
+        setAnswer([]);
+        setStatus("playing");
+      }, 1100);
     }
-  }, [index, total, addStar]);
+  }, [round, missed, index, total, addStar, incrementSession]);
+
+  const pick = useCallback((tile: Tile) => {
+    if (locked || answer.length >= slots || answer.some((t) => t.id === tile.id)) return;
+    // real syllables are said as inside the word; distractors use the plain recording
+    speakSyllable(tile.text, undefined, round.word.syllables.includes(tile.text) ? round.word.word : undefined);
+    const next = [...answer, tile];
+    setAnswer(next);
+    if (next.length === slots) check(next);
+  }, [locked, answer, slots, check, round]);
+
+  const unpick = useCallback((tile: Tile) => {
+    if (locked) return;
+    playPop();
+    setAnswer((a) => a.filter((t) => t.id !== tile.id));
+  }, [locked]);
 
   if (completed) {
     return (
@@ -470,75 +492,84 @@ function ModeFull({ onBack }: { onBack: () => void }) {
       </div>
     );
   }
+  if (!round) return null;
 
-  if (!currentWord) {
-    return (
-      <div className="flex flex-col">
-        <div className="flex items-center justify-center py-12">
-          <p className="font-body text-ink-muted text-lg">
-            Tidak ada kata tersedia.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const slideVariants = {
-    enter: (dir: number) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
-    center: { x: 0, opacity: 1 },
-    exit: (dir: number) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
-  };
+  const slotTone =
+    status === "correct" ? "bg-good-strong border-good-strong text-on-accent"
+    : status === "wrong" ? "bg-surface border-warn text-ink"
+    : "bg-surface border-line text-ink";
 
   return (
     <div className="flex flex-col">
       <ProgressBar current={index + 1} total={total} />
 
-      <div className="flex flex-col items-center gap-6">
-        <AnimatePresence mode="wait" custom={direction}>
-          <motion.div
-            key={index}
-            custom={direction}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.25, ease: "easeInOut" }}
-            className="flex flex-col items-center gap-4"
+      <div className="flex flex-col items-center gap-5">
+        {/* Picture + listen hint */}
+        <div className="flex items-center gap-3">
+          <WordPicture key={round.word.id} word={round.word} className="w-32 h-32 sm:w-40 sm:h-40" />
+          <button
+            type="button"
+            onClick={() => speak(round.word.word)}
+            aria-label="Dengar kata"
+            className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent-soft text-accent-strong hover:bg-line active:bg-line transition-colors"
           >
-            {/* Icon */}
-            <span className="text-7xl sm:text-8xl leading-none select-none" aria-hidden="true">{currentWord.emoji}</span>
+            <SpeakerIcon />
+          </button>
+        </div>
 
-            {/* Full word */}
-            <div className="bg-surface rounded-3xl border border-line px-8 py-4 sm:px-12 sm:py-6">
-              <span className="text-[40px] sm:text-5xl leading-tight font-heading font-bold text-ink select-none">
-                {currentWord.word}
-              </span>
-            </div>
-
-            {/* Syllable breakdown */}
-            <div className="flex items-center gap-2 mt-2">
-              {currentWord.syllables.map((syl, i) => (
+        {/* Answer slots */}
+        <div className="flex flex-col items-center gap-2 w-full">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3" aria-label="Jawaban">
+            {Array.from({ length: slots }, (_, i) => {
+              const tile = answer[i];
+              return tile ? (
                 <motion.button
-                  key={i}
-                  onClick={() => speakSyllable(syl)}
-                  className="bg-accent-soft rounded-2xl px-5 py-3 min-w-[60px] min-h-[52px] flex items-center justify-center hover:bg-line active:bg-line transition-colors"
+                  key={tile.id}
+                  type="button"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.15 }}
+                  onClick={() => unpick(tile)}
+                  disabled={locked}
+                  aria-label={`${tile.text}, ketuk untuk mengembalikan`}
+                  className={`min-w-[84px] min-h-[72px] px-5 rounded-2xl border-2 font-heading text-[32px] font-bold leading-none transition-colors ${slotTone}`}
                 >
-                  <span className="text-2xl font-heading text-ink select-none">
-                    {syl}
-                  </span>
+                  {tile.text}
                 </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        </AnimatePresence>
+              ) : (
+                <span
+                  key={`slot-${i}`}
+                  aria-hidden="true"
+                  className={`min-w-[84px] min-h-[72px] rounded-2xl border-2 border-dashed ${status === "wrong" ? "border-warn" : "border-ink-muted/40"}`}
+                />
+              );
+            })}
+          </div>
+          <p className="font-body text-base min-h-[24px] text-center" aria-live="polite">
+            {status === "wrong" && <span className="text-warn-strong">Coba lagi</span>}
+            {status === "correct" && <span className="text-good-strong font-semibold">Benar! {round.word.word}</span>}
+          </p>
+        </div>
 
-        <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
-          <BigButton tone="quiet" onClick={handleListen} className="flex-col sm:flex-row !gap-1 sm:!gap-3 !px-3 sm:!px-6">
-            <SpeakerIcon /> Dengar
-          </BigButton>
-          <BigButton onClick={handleNext} className="flex-col sm:flex-row !gap-1 sm:!gap-3 !px-3 sm:!px-6">
-            Selanjutnya <NextIcon />
-          </BigButton>
+        {/* Tiles: used ones stay in place (faded) so nothing jumps */}
+        <div className="flex flex-wrap justify-center gap-3 max-w-md" aria-label="Pilihan suku kata">
+          {round.tiles.map((tile) => {
+            const used = answer.some((t) => t.id === tile.id);
+            return (
+              <button
+                key={tile.id}
+                type="button"
+                onClick={() => pick(tile)}
+                disabled={used || locked}
+                aria-hidden={used || undefined}
+                className={`min-w-[84px] min-h-[72px] px-5 rounded-2xl border-2 font-heading text-[32px] font-bold leading-none transition-[opacity,background-color] ${
+                  used ? "opacity-25 border-line bg-paper text-ink-muted" : "border-line bg-surface text-ink hover:bg-accent-soft active:bg-line"
+                }`}
+              >
+                {tile.text}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -565,8 +596,8 @@ export default function SukuKataPage() {
       <GameTutorial
         gameKey="suku-kata"
         steps={[
-          { emoji: "\ud83d\udd24", text: "Pilih salah satu mode belajar: suku kata tunggal, gabung suku kata, atau kata utuh." },
-          { emoji: "\ud83e\udde0", text: "Di mode 'Gabung Suku Kata', gabungkan dua suku kata menjadi kata yang benar!" },
+          { image: "/images/ui/choose.webp", text: "Pilih salah satu mode belajar: suku kata tunggal, gabung suku kata, atau susun suku kata." },
+          { image: "/images/words/bnd-1.webp", text: "Di mode 'Gabung Suku Kata', gabungkan dua suku kata menjadi kata yang benar!" },
         ]}
       />
       <AnimatePresence mode="wait">
@@ -593,9 +624,9 @@ export default function SukuKataPage() {
           </motion.div>
         )}
 
-        {mode === "full" && (
-          <motion.div key="full" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ModeFull onBack={handleBackFromMode} />
+        {mode === "build" && (
+          <motion.div key="build" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <ModeBuild onBack={handleBackFromMode} />
           </motion.div>
         )}
       </AnimatePresence>

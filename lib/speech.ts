@@ -2,7 +2,7 @@
 
 import { useAppStore } from "@/store/useAppStore";
 import { asset } from "@/lib/asset";
-import { audioKey } from "@/lib/audioKey";
+import { audioKey, syllableKey } from "@/lib/audioKey";
 import audioManifest from "@/lib/audioManifest.json";
 
 let cachedVoice: SpeechSynthesisVoice | null = null;
@@ -87,9 +87,9 @@ function stopRecorded() {
   }
 }
 
-function playRecorded(text: string, onEnd?: () => void): boolean {
-  const key = audioKey(text);
-  if (!recorded.has(key) || typeof Audio === "undefined") return false;
+function playRecorded(text: string, onEnd?: () => void, keys: string[] = [audioKey(text)]): boolean {
+  const key = keys.find((k) => recorded.has(k));
+  if (!key || typeof Audio === "undefined") return false;
   stopRecorded();
   window.speechSynthesis?.cancel();
   const audio = new Audio(asset(`/audio/${key}.mp3`));
@@ -144,7 +144,15 @@ export function speakIslamic(text: string, onEnd?: () => void) {
   speak(text, { rate: 0.6, pitch: 1.0, onEnd });
 }
 
-export function speakSyllable(syllable: string, onEnd?: () => void) {
+/**
+ * Speak a syllable. Pass the word it belongs to so the recording made inside that
+ * word is used (e.g. "be" in "bebek" vs "belajar"); falls back to the plain syllable.
+ */
+export function speakSyllable(syllable: string, onEnd?: () => void, word?: string) {
+  if (word && typeof window !== "undefined") {
+    try { if (useAppStore.getState().isMuted) return; } catch { return; }
+    if (playRecorded(syllable, onEnd, [syllableKey(syllable, word), audioKey(syllable)])) return;
+  }
   speak(syllable, { rate: 0.6, pitch: 1.1, onEnd });
 }
 

@@ -6,6 +6,7 @@
  *
  *   npm run gen:audio                    # all missing
  *   npm run gen:audio -- --only kucing,ma --force   # exact keys
+ *   npm run gen:audio -- --kind syllable --force    # one kind: word | syllable | wordSyllable | sentence | islamic
  *   npm run gen:audio -- --force         # re-record
  *
  * Texts come from data/words.ts, data/islamic.ts, the Suku Kata syllable list and
@@ -19,7 +20,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { words, simpleSentences } from "../data/words.ts";
 import { hijaiyahLetters, dailyDoas, asmaulHusna } from "../data/islamic.ts";
-import { audioKey } from "../lib/audioKey.ts";
+import { audioKey, syllableKey } from "../lib/audioKey.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const outDir = join(root, "public/audio");
@@ -29,6 +30,7 @@ const CONCURRENCY = 4;
 // Phrases spoken outside the data files (add here when the app speaks new fixed text).
 const EXTRA = [];
 
+const INDONESIAN_ONLY = "Speak Bahasa Indonesia only; never read it as English, German or any other language.";
 const STYLE = {
   word: "A warm, gentle Indonesian kindergarten teacher saying one Bahasa Indonesia word to a young child. Slow, clear, friendly. Say only the word.",
   syllable: "A warm, gentle Indonesian kindergarten teacher pronouncing a single Bahasa Indonesia syllable to a young child, slowly and clearly. Say only the syllable.",
@@ -36,9 +38,48 @@ const STYLE = {
   islamic: "A calm, gentle Indonesian Muslim teacher reciting Arabic in Latin transliteration for a young child. Slow, clear, respectful.",
 };
 
+// A bare syllable has no language context, so the model may read it as German/English
+// ("ja" → "ya", "to" → "tu"). Anchor each syllable to an Indonesian word that contains it.
+const PHONETICS = "Use Indonesian spelling-to-sound rules: j = /dʒ/ as in jalan, c = /tʃ/ as in cicak, y = /j/, o = /o/ (never /u/), u = /u/, e = /ə/ or /e/, a = /a/, ng = /ŋ/, ny = /ɲ/, kh = /x/, sy = /ʃ/.";
+const exampleWord = (syl) => {
+  const w = words.find((x) => x.syllables[0] === syl) ?? words.find((x) => x.syllables.includes(syl));
+  return w?.word;
+};
+// Syllables the model still misreads even with an example word: send a spoken spelling
+// instead (the file name and the on-screen text stay the original syllable).
+const SAY_AS = { to: "toh" };
+
+// Indonesian writes both e sounds as "e". Inside a word we know which one it is (KBBI):
+// é = e taling /e/ (bebek), plain e = e pepet /ə/ (belajar). Key = syllableKey(syl, word).
+const TALING = {
+  "be--bebek": "bé", "bek--bebek": "bék", "nek--nenek": "nék", "kek--kakek": "kék",
+  "pel--apel": "pél", "me--melon": "mé", "be--stroberi": "bé", "e--mie": "é", "e--kue": "é",
+  "men--permen": "mén", "es--es-krim": "és", "pe--sepeda": "pé", "ne--boneka": "né",
+  "me--merah": "mé", "nye--oranye": "nyé", "pen--pensil": "pén", "sen--sendok": "sén",
+};
+
+function styleFor({ text, kind, word, idx }) {
+  if (kind === "wordSyllable") {
+    const parts = word.syllables.join("-");
+    const key = syllableKey(text, word.word);
+    const eNote = TALING[key]
+      ? ` The vowel e here is a clear, tense e (e taling /e/, as in "bebek" and "sate"), never a weak schwa.`
+      : text.includes("e") ? ` The vowel e here is a weak schwa (e pepet /ə/, as in "belajar" and "kecil"), never a clear e.` : "";
+    return `${STYLE.syllable} Say ONLY the syllable "${text}", exactly as it sounds inside the Indonesian word "${word.word}" (part ${idx + 1} of ${word.syllables.length}: ${parts}).${eNote} ${PHONETICS} ${INDONESIAN_ONLY}`;
+  }
+  if (kind !== "syllable") return `${STYLE[kind]} ${kind === "islamic" ? "" : INDONESIAN_ONLY}`;
+  const ex = exampleWord(text);
+  return `${STYLE.syllable} This is the Indonesian syllable "${text}". ${ex ? `Pronounce it exactly as it sounds inside the Indonesian word "${ex}".` : ""} ${PHONETICS} ${INDONESIAN_ONLY}`;
+}
+const spoken = ({ key, text, kind }) =>
+  kind === "wordSyllable" ? (TALING[key] ?? SAY_AS[text] ?? text)
+  : kind === "syllable" ? (SAY_AS[text] ?? text)
+  : text;
+
 const args = process.argv.slice(2);
 const force = args.includes("--force");
 const only = args.includes("--only") ? args[args.indexOf("--only") + 1].split(",") : null;
+const kindFilter = args.includes("--kind") ? args[args.indexOf("--kind") + 1] : null;
 
 function apiKey() {
   if (process.env.KIE_API_KEY) return process.env.KIE_API_KEY;
@@ -49,12 +90,17 @@ function apiKey() {
 }
 const KEY = apiKey();
 
-// text → kind (first kind wins; a word like "ma" stays a word)
+// key → entry (first kind wins; a word like "ma" stays a word)
 const texts = new Map();
-const add = (t, kind) => { if (t && !texts.has(t)) texts.set(t, kind); };
+const add = (t, kind) => { const key = t && audioKey(t); if (t && !texts.has(key)) texts.set(key, { key, text: t, kind }); };
 words.forEach((w) => add(w.word, "word"));
 simpleSentences.forEach((s) => add(s, "sentence"));
 words.forEach((w) => w.syllables.forEach((s) => add(s, "syllable")));
+// Each syllable again, as said inside its own word (used when the app knows the word).
+words.forEach((w) => w.syllables.forEach((s, idx) => {
+  const key = syllableKey(s, w.word);
+  if (!texts.has(key)) texts.set(key, { key, text: s, kind: "wordSyllable", word: w, idx });
+}));
 const suku = readFileSync(join(root, "app/suku-kata/page.tsx"), "utf8").match(/SINGLE_SYLLABLES = \[([\s\S]*?)\]/)[1];
 [...suku.matchAll(/"([^"]+)"/g)].forEach((m) => add(m[1], "syllable"));
 hijaiyahLetters.forEach((h) => add(h.name, "islamic"));
@@ -63,8 +109,9 @@ asmaulHusna.forEach((a) => add(a.latin, "islamic"));
 EXTRA.forEach((t) => add(t, "sentence"));
 
 mkdirSync(outDir, { recursive: true });
-let todo = [...texts].filter(([t]) => force || !existsSync(join(outDir, `${audioKey(t)}.mp3`)));
-if (only) todo = [...texts].filter(([t]) => only.includes(audioKey(t)));
+let todo = [...texts.values()].filter((e) => force || !existsSync(join(outDir, `${e.key}.mp3`)));
+if (only) todo = [...texts.values()].filter((e) => only.includes(e.key));
+if (kindFilter) todo = todo.filter((e) => e.kind === kindFilter);
 console.log(`${texts.size} texts, ${todo.length} to record`);
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -80,13 +127,13 @@ async function kie(path, body) {
   return json.data;
 }
 
-async function record(text, kind) {
+async function record(entry) {
   const { taskId } = await kie("createTask", {
     model: "google/gemini-3-8-flash-tts",
     input: {
       temperature: 0.7,
       speakers: [{ speaker_id: "Speaker 1", voice_name: VOICE }],
-      dialogue_turns: [{ speaker_id: "Speaker 1", style: STYLE[kind], text }],
+      dialogue_turns: [{ speaker_id: "Speaker 1", style: styleFor(entry), text: spoken(entry) }],
     },
   });
   for (let i = 0; i < 60; i++) {
@@ -104,11 +151,11 @@ async function record(text, kind) {
 
 let made = 0, credits = 0;
 const failed = [];
-async function work([text, kind]) {
-  const key = audioKey(text);
+async function work(entry) {
+  const { key } = entry;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const { wav, credits: c } = await record(text, kind);
+      const { wav, credits: c } = await record(entry);
       const tmp = join(tmpdir(), `tts-${key}-${process.pid}.wav`);
       writeFileSync(tmp, wav);
       // trim leading/trailing silence, mono 64k mp3

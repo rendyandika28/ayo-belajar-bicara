@@ -7,7 +7,7 @@
  *
  * Uploads public/images/{words,ui,games} and public/audio to the bucket in R2_BUCKET
  * (env or .env.local) with the same paths, e.g. audio/kucing.mp3. Uses wrangler
- * (run `npx wrangler login` once). Uploaded sizes are remembered in .assets-uploaded.json.
+ * (run `npx wrangler login` once). Uploaded size+mtime are remembered in .assets-uploaded.json.
  * After `npm run gen:words` / `gen:ui` / `gen:audio`, run this.
  */
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
@@ -40,7 +40,9 @@ const files = DIRS.flatMap((d) => {
   const dir = join(root, "public", d);
   return existsSync(dir) ? readdirSync(dir).filter((f) => TYPES[extname(f)]).map((f) => `${d}/${f}`) : [];
 });
-const todo = files.filter((k) => all || state[k] !== statSync(join(root, "public", k)).size);
+// size + mtime: a re-generated file can have the same size as the old one
+const stamp = (k) => { const st = statSync(join(root, "public", k)); return `${st.size}:${Math.round(st.mtimeMs)}`; };
+const todo = files.filter((k) => all || state[k] !== stamp(k));
 console.log(`${files.length} files, ${todo.length} to upload → r2://${bucket}`);
 
 let done = 0;
@@ -50,7 +52,7 @@ async function upload(key) {
   try {
     await run("npx", ["wrangler", "r2", "object", "put", `${bucket}/${key}`, "--file", file,
       "--content-type", TYPES[extname(key)], "--cache-control", "public, max-age=31536000", "--remote"]);
-    state[key] = statSync(file).size;
+    state[key] = stamp(key);
     done++;
     if (done % 25 === 0 || done === todo.length) console.log(`  ${done}/${todo.length}`);
   } catch (e) {

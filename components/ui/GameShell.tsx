@@ -40,8 +40,10 @@ export default function GameShell({
   return (
     <div className="min-h-screen bg-paper text-ink">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-4 pb-12">
-        {/* Phones: title on its own row so it never truncates; wider: one row. */}
-        <header className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-5">
+        {/* 3 equal side tracks keep the title exactly centred. Phones: title gets its own
+            centred row so it never truncates; wider: one row. */}
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 mb-5">
+          <div className="flex justify-start">
           {onBack ? (
             <button type="button" onClick={() => { playPop(); onBack(); }} aria-label={backLabel} className={btn}>
               {backIcon}
@@ -51,8 +53,9 @@ export default function GameShell({
               {backHref === "/" ? homeIcon : backIcon}
             </Link>
           )}
-          <h1 className="order-last basis-full sm:order-none sm:basis-auto sm:flex-1 min-w-0 font-heading text-2xl sm:text-3xl font-bold text-ink text-center" style={{ overflowWrap: "break-word" }}>{title}</h1>
-          <div className="ml-auto sm:ml-0 flex items-center gap-2 justify-end">
+          </div>
+          <h1 className="order-last col-span-2 sm:order-none sm:col-span-1 min-w-0 font-heading text-2xl sm:text-3xl font-bold text-ink text-center" style={{ overflowWrap: "break-word" }}>{title}</h1>
+          <div className="flex items-center gap-2 justify-end">
             {focusMode && <FocusModeButton />}
             <StarCounter />
           </div>

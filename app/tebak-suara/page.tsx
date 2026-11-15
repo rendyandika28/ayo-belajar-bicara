@@ -76,7 +76,7 @@ export default function TebakSuaraPage() {
   const handleListenSlow = useCallback(() => {
     if (!current) return;
     current.word.syllables.forEach((syl, i) => {
-      setTimeout(() => speakSyllable(syl), i * 700);
+      setTimeout(() => speakSyllable(syl, undefined, current.word.word), i * 700);
     });
   }, [current]);
 

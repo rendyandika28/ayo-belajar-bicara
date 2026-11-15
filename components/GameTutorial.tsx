@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { asset } from "@/lib/asset";
+import AssetImage from "@/components/ui/AssetImage";
 import { motion, AnimatePresence } from "framer-motion";
 import BigButton from "@/components/ui/BigButton";
 
@@ -65,10 +65,7 @@ export default function GameTutorial({ gameKey, steps }: GameTutorialProps) {
             <div className="flex flex-col items-center text-center">
               {/* Step picture for pre-readers (content from the page) */}
               {current.image ? (
-                <span className="block w-28 h-28 rounded-3xl overflow-hidden bg-paper mb-4" aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={asset(current.image)} alt="" className="w-full h-full object-cover" />
-                </span>
+                <AssetImage key={current.image} src={current.image} eager className="w-28 h-28 rounded-3xl mb-4" />
               ) : current.emoji && (
                 <span className="flex items-center justify-center w-24 h-24 rounded-full bg-accent-soft text-5xl mb-4" aria-hidden="true">
                   {current.emoji}

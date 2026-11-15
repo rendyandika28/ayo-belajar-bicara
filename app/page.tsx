@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { asset } from "@/lib/asset";
+import AssetImage from "@/components/ui/AssetImage";
 import Link from "next/link";
 import StarCounter from "@/components/ui/StarCounter";
 import MuteButton from "@/components/MuteButton";
@@ -20,17 +20,7 @@ function GameCard({ game: item, eager }: { game: Game; eager?: boolean }) {
       className={`home-card group flex flex-col bg-surface rounded-3xl border border-line p-3 min-w-0 transition-transform hover:-translate-y-0.5 active:scale-[0.97]`}
     >
       {/* Slot: public/images/games/<slug>.webp, 1024x1024, AI illustration */}
-      <div className="aspect-square w-full rounded-2xl bg-accent-soft overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={asset(`/images/games/${item.slug}.webp`)}
-          alt=""
-          loading={eager ? "eager" : "lazy"}
-          decoding="async"
-          className="w-full h-full object-cover"
-          onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
-        />
-      </div>
+      <AssetImage src={`/images/games/${item.slug}.webp`} eager={eager} className="aspect-square w-full rounded-2xl" />
       <span className="font-heading text-lg sm:text-xl font-semibold text-ink mt-3 px-1">{item.label}</span>
       <span className="font-body text-sm text-ink-muted leading-snug px-1 pb-1">{item.desc}</span>
     </Link>
