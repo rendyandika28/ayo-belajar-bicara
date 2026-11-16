@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from "@testing-library/react";
-import CalmModeToggle from "@/components/CalmModeToggle";
+import CalmModeToggle from "@/components/SettingToggle";
 import { useAppStore } from "@/store/useAppStore";
 
 describe("CalmModeToggle", () => {

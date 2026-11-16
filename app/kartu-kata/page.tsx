@@ -175,7 +175,7 @@ export default function KartuKataPage() {
                       <WordPicture word={currentWord} className="w-44 h-44 sm:w-48 sm:h-48" />
                     </div>
 
-                    <h2 className="font-heading text-[40px] sm:text-5xl leading-tight font-bold text-ink mb-3">
+                    <h2 className="word-text font-heading text-[40px] sm:text-5xl leading-tight font-bold text-ink mb-3">
                       {currentWord.word}
                     </h2>
 
@@ -189,7 +189,11 @@ export default function KartuKataPage() {
                             }}
                             className="bg-accent-soft text-ink font-heading text-xl px-4 rounded-2xl min-w-[56px] min-h-[48px] hover:bg-line active:bg-line transition-colors"
                           >
-                            {syl}
+                            <span className="word-text">{syl}</span>
+                            <svg className="word-icon mx-auto" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M11 5 6 9H3v6h3l5 4z" />
+                              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                            </svg>
                           </button>
                           {i < currentWord.syllables.length - 1 && (
                             <span className="text-ink-muted font-body text-lg" aria-hidden="true">

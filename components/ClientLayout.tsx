@@ -75,6 +75,12 @@ export default function ClientLayout({
     MotionGlobalConfig.skipAnimations = calmMode;
   }, [calmMode]);
 
+  // Sync "Sembunyikan Tulisan" to body class. CSS (not conditional render) so server and client HTML match.
+  const hideText = useAppStore((s) => s.hideText);
+  useEffect(() => {
+    document.body.classList.toggle("hide-text-active", hideText);
+  }, [hideText]);
+
   const handleInstall = async () => {
     if (!installPrompt) return;
     await installPrompt.prompt();

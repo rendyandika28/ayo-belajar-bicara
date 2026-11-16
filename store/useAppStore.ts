@@ -11,6 +11,8 @@ interface AppState {
   toggleMute: () => void;
   calmMode: boolean;
   toggleCalmMode: () => void;
+  hideText: boolean;
+  toggleHideText: () => void;
 
   totalStars: number;
   currentLevel: number;
@@ -99,6 +101,8 @@ export const useAppStore = create<AppState>()(
       toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
       calmMode: false,
       toggleCalmMode: () => set((state) => ({ calmMode: !state.calmMode })),
+      hideText: false,
+      toggleHideText: () => set((state) => ({ hideText: !state.hideText })),
 
       ...initialState,
 

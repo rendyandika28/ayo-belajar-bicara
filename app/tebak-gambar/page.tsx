@@ -270,7 +270,7 @@ export default function TebakGambarPage() {
                     <span className="flex-1 min-h-0 w-full flex items-center justify-center">
                       <WordPicture word={option} className="h-full max-h-36 aspect-square" emojiClassName="text-5xl sm:text-6xl" />
                     </span>
-                    <span className="shrink-0 font-heading text-lg sm:text-xl font-bold text-ink">
+                    <span className="word-text shrink-0 font-heading text-lg sm:text-xl font-bold text-ink">
                       {option.word}
                     </span>
 
