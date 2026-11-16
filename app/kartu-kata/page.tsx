@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import AssetImage from "@/components/ui/AssetImage";
 import { motion, AnimatePresence } from "framer-motion";
-import { speak, speakSyllable } from "@/lib/speech";
+import { speak, speakSyllable, preloadAudio } from "@/lib/speech";
 import { words, categories } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
 import GameShell from "@/components/ui/GameShell";
@@ -41,6 +41,8 @@ export default function KartuKataPage() {
   }, [selectedCategory]);
 
   const currentWord = allWords[currentIndex];
+  // Fetch this and the next item's voice now, so it plays instantly when asked for.
+  useEffect(() => preloadAudio([allWords[currentIndex]?.word, allWords[currentIndex + 1]?.word]), [allWords, currentIndex]);
 
   // Mark word as learned and give star on first view
   useEffect(() => {

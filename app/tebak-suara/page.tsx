@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { words, Word } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
-import { speak } from "@/lib/speech";
+import { speak, preloadAudio } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import Link from "next/link";
 import GameShell from "@/components/ui/GameShell";
@@ -59,6 +59,8 @@ export default function TebakSuaraPage() {
 
   const isLocked = feedback !== "none";
   const current = questions[index];
+  // Fetch this and the next item's voice now, so it plays instantly when asked for.
+  useEffect(() => preloadAudio([questions[index]?.word.word, questions[index + 1]?.word.word]), [questions, index]);
 
   // Auto-play audio when question changes
   useEffect(() => {

@@ -58,6 +58,7 @@ class MockAudioContext {
 Object.defineProperty(globalThis, "AudioContext", {
   value: MockAudioContext,
   writable: true,
+  configurable: true,
 });
 
 // Mock SpeechSynthesis

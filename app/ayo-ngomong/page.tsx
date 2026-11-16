@@ -9,6 +9,7 @@ import {
   createSpeechRecognition,
   isSpeechRecognitionSupported,
   SpeechRecognitionInstance,
+  preloadAudio,
 } from "@/lib/speech";
 import { playCorrect, playPop, playApplause } from "@/lib/sounds";
 import { judge } from "@/lib/fuzzyMatch";
@@ -53,6 +54,8 @@ export default function AyoNgomongPage() {
   }, []);
 
   const currentWord = sessionWords[currentIndex];
+  // Fetch this and the next item's voice now, so it plays instantly when asked for.
+  useEffect(() => preloadAudio([sessionWords[currentIndex]?.word, sessionWords[currentIndex + 1]?.word]), [sessionWords, currentIndex]);
 
   // Check speech recognition support on mount
   useEffect(() => {

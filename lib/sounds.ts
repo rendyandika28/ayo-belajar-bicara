@@ -4,7 +4,7 @@ import { useAppStore } from "@/store/useAppStore";
 
 let audioContext: AudioContext | null = null;
 
-function getAudioContext(): AudioContext {
+export function getAudioContext(): AudioContext {
   if (!audioContext) {
     audioContext = new AudioContext();
   }

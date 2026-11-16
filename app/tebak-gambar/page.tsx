@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { words, Word } from "@/data/words";
 import { TOTAL_QUESTIONS, generateQuestions, readRecent, rememberTargets } from "@/lib/tebakGambar";
 import { useAppStore } from "@/store/useAppStore";
-import { speak } from "@/lib/speech";
+import { speak, preloadAudio } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
@@ -43,6 +43,8 @@ export default function TebakGambarPage() {
   }, [allWords]);
 
   const currentQuestion = questions[currentIndex];
+  // Fetch this and the next item's voice now, so it plays instantly when asked for.
+  useEffect(() => preloadAudio([questions[currentIndex]?.target.word, questions[currentIndex + 1]?.target.word]), [questions, currentIndex]);
 
   // Speak the target word when question changes
   const speakTarget = useCallback(() => {

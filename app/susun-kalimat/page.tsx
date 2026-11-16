@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
 import { sentences } from "@/data/sentences";
 import { planSession, isCorrect, SESSION_SIZE, type Round, type Tile } from "@/lib/susunKalimat";
-import { speak } from "@/lib/speech";
+import { speak, preloadAudio } from "@/lib/speech";
 import { playPop, playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
@@ -42,6 +42,8 @@ export default function SusunKalimatPage() {
   }, [recordGamePlay]);
 
   const round = rounds[idx];
+  // Fetch this and the next item's voice now, so it plays instantly when asked for.
+  useEffect(() => preloadAudio([rounds[idx]?.sentence.text, rounds[idx + 1]?.sentence.text]), [rounds, idx]);
 
   // Say the sentence when a round starts: the child builds what they hear.
   useEffect(() => {

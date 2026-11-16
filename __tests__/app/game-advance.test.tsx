@@ -19,6 +19,7 @@ const speak = vi.fn();
 vi.mock("@/lib/speech", () => ({
   speak: (w: string) => speak(w),
   speakSyllable: vi.fn(),
+  preloadAudio: vi.fn(),
   createSpeechRecognition: () => null,
   isSpeechRecognitionSupported: () => false,
 }));

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
 import { words, Word } from "@/data/words";
-import { speak, speakSyllable } from "@/lib/speech";
+import { speak, speakSyllable, preloadAudio } from "@/lib/speech";
 import { playPop, playCorrect, playWrong, playApplause } from "@/lib/sounds";
 import { planSession, isCorrect, type Tile } from "@/lib/susunSuku";
 import GameShell from "@/components/ui/GameShell";
@@ -429,6 +429,8 @@ function ModeBuild({ onBack }: { onBack: () => void }) {
   const [completed, setCompleted] = useState(false);
 
   const round = rounds[index];
+  // Fetch this and the next item's voice now, so it plays instantly when asked for.
+  useEffect(() => preloadAudio([rounds[index]?.word.word, rounds[index + 1]?.word.word]), [rounds, index]);
   const total = rounds.length;
   const slots = round?.word.syllables.length ?? 0;
   const locked = status !== "playing";

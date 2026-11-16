@@ -4,6 +4,7 @@ import { useAppStore } from "@/store/useAppStore";
 import { asset } from "@/lib/asset";
 import { audioKey, syllableKey } from "@/lib/audioKey";
 import audioManifest from "@/lib/audioManifest.json";
+import { getAudioContext } from "@/lib/sounds";
 
 let cachedVoice: SpeechSynthesisVoice | null = null;
 let voicesReady = false;
@@ -78,15 +79,95 @@ export function initSpeech() {
 
 // Recorded natural voice (npm run gen:audio) for texts in the manifest; browser TTS otherwise.
 const recorded = new Set<string>(audioManifest as string[]);
-let currentAudio: HTMLAudioElement | null = null;
+// One shared element, unlocked by unlockAudio() on the first tap: iOS Safari only lets an
+// element play outside a tap (auto-play on a new question) if it was played inside one before.
+let player: HTMLAudioElement | null = null;
+let playing = false;
+// Bumped on every stop/start; stale handlers of a replaced clip compare against it.
+let playId = 0;
 // Ends the progress tracking of the playing clip (see playRecorded's onProgress).
 let currentStop: (() => void) | null = null;
 
-function stopRecorded() {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
+function getPlayer(): HTMLAudioElement | null {
+  if (!player && typeof Audio !== "undefined") player = new Audio();
+  return player;
+}
+
+// 0.1s of real silence (8kHz 8-bit): an empty WAV may not count as playback in Safari.
+const SILENT = "data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==";
+
+/** Call synchronously inside a tap/click handler (not after await/then). */
+export function unlockAudio() {
+  // iOS 17+: play through the silent switch like a media app (Web Audio is muted by it otherwise).
+  const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession;
+  if (session) session.type = "playback";
+  const p = getPlayer();
+  // A clip already playing means the element is unlocked; don't cut it off.
+  if (!p || (playing && !p.paused)) return;
+  p.src = SILENT;
+  p.play()?.catch(() => {});
+}
+
+/** True once a gesture has unlocked Web Audio; until then keep trying on every tap. */
+export function audioUnlocked(): boolean {
+  return audioCtx()?.state === "running";
+}
+
+function audioCtx(): AudioContext | null {
+  try { return getAudioContext(); } catch { return null; }
+}
+
+// Decoded clips, kept for the session: replays start instantly, no network or <audio> start-up
+// (~100-400ms in Safari per play). Needs CORS on the R2 bucket; without it fetch fails and
+// playback falls back to the <audio> element.
+// Long clips (doa) are not kept: decoded PCM is ~10x the mp3 size.
+const buffers = new Map<string, Promise<AudioBuffer | null>>();
+
+function loadBuffer(key: string): Promise<AudioBuffer | null> {
+  let p = buffers.get(key);
+  if (!p) {
+    const ctx = audioCtx();
+    if (!ctx || typeof fetch === "undefined") return Promise.resolve(null);
+    // "?cors": own cache entry; the plain URL may be cached (1 year) from <audio> without CORS headers.
+    p = fetch(asset(`/audio/${key}.mp3?cors`))
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
+      .then((b) => ctx.decodeAudioData(b))
+      .then((buf) => {
+        if (buf.duration > 10) buffers.delete(key);
+        return buf;
+      })
+      .catch(() => {
+        // Remember the failure for a while so every play doesn't wait on a failing fetch first.
+        setTimeout(() => buffers.delete(key), 30_000);
+        return null;
+      });
+    buffers.set(key, p);
   }
+  return p;
+}
+
+/** Fetch and decode recordings ahead of time (e.g. the words on screen) so speak() starts instantly. */
+export function preloadAudio(texts: (string | undefined)[]) {
+  if (typeof window === "undefined") return;
+  for (const t of texts) {
+    if (!t) continue;
+    const key = audioKey(t);
+    if (recorded.has(key)) loadBuffer(key);
+  }
+}
+
+let source: AudioBufferSourceNode | null = null;
+
+function stopRecorded() {
+  if (source) {
+    try { source.stop(); } catch {}
+    source = null;
+  }
+  if (playing) {
+    player?.pause();
+    playing = false;
+  }
+  playId++;
   const stop = currentStop;
   currentStop = null;
   stop?.();
@@ -106,51 +187,98 @@ function playRecorded(
   speed?: number
 ): boolean {
   const key = keys.find((k) => recorded.has(k));
-  if (!key || typeof Audio === "undefined") return false;
+  if (!key) return false;
+  const audio = getPlayer();
+  if (!audio) return false;
   stopRecorded();
   window.speechSynthesis?.cancel();
-  const audio = new Audio(asset(`/audio/${key}.mp3`));
-  // Slower playback of the same natural recording; browsers keep the pitch by default.
-  if (speed) { audio.playbackRate = speed; audio.preservesPitch = true; }
-  currentAudio = audio;
+  const id = playId;
+  const live = () => id === playId;
+  playing = true;
   let done = false;
   // Runs once however the clip ends: finished, replaced, stopped or failed mid-way.
   const finish = () => {
     if (done) return;
     done = true;
     if (currentStop === finish) currentStop = null;
+    if (live()) playing = false;
     onEnd?.();
   };
-  if (onProgress) {
-    // Only progress callers get onEnd on stop: they must clear their highlight.
-    currentStop = finish;
-    // rAF, not timeupdate (fires only ~4x/s): smooth enough to follow syllables.
-    const tick = () => {
-      if (done || currentAudio !== audio) return;
-      if (audio.ended) return finish();
-      if (audio.duration > 0) onProgress(audio.currentTime / audio.duration);
-      requestAnimationFrame(tick);
-    };
-    audio.onplay = () => requestAnimationFrame(tick);
-    // Network error after playback started (before that, play() rejects: see catch).
-    audio.onerror = () => {
-      if (audio.currentTime > 0 && currentAudio === audio) {
-        currentAudio = null;
-        finish();
-      }
-    };
+  // Only progress callers get onEnd on stop: they must clear their highlight.
+  if (onProgress) currentStop = finish;
+
+  const playElement = () => {
+    audio.src = asset(`/audio/${key}.mp3`);
+    // Slower playback of the same natural recording; browsers keep the pitch by default.
+    // Safari resets playbackRate to defaultPlaybackRate on a new src, so set both.
+    audio.defaultPlaybackRate = audio.playbackRate = speed || 1;
+    audio.preservesPitch = true;
+    audio.onplay = null;
+    audio.onerror = null;
+    if (onProgress) {
+      // rAF, not timeupdate (fires only ~4x/s): smooth enough to follow syllables.
+      const tick = () => {
+        if (done || !live()) return;
+        if (audio.ended) return finish();
+        if (audio.duration > 0) onProgress(audio.currentTime / audio.duration);
+        requestAnimationFrame(tick);
+      };
+      audio.onplay = () => requestAnimationFrame(tick);
+      // Network error after playback started (before that, play() rejects: see catch).
+      audio.onerror = () => {
+        if (audio.currentTime > 0 && live()) finish();
+      };
+    }
+    audio.onended = () => { if (live()) finish(); };
+    audio.play().catch(() => {
+      // Superseded by newer audio (pause() rejects play() with AbortError): stay silent,
+      // otherwise the browser voice plays on top of the new recording.
+      if (!live()) return;
+      // Autoplay blocked or file missing: fall back to the browser voice.
+      playing = false;
+      if (currentStop === finish) currentStop = null;
+      done = true;
+      if (window.speechSynthesis) doSpeak(text, { onEnd, rate });
+      else onEnd?.();
+    });
+  };
+
+  // Slow playback keeps the element: a buffer source can only slow down by lowering the pitch.
+  const ctx = speed ? null : audioCtx();
+  if (!ctx) {
+    playElement();
+    return true;
   }
-  audio.onended = finish;
-  audio.play().catch(() => {
-    // Superseded by newer audio (pause() rejects play() with AbortError): stay silent,
-    // otherwise the browser voice plays on top of the new recording.
-    if (currentAudio !== audio) return;
-    // Autoplay blocked or file missing: fall back to the browser voice.
-    currentAudio = null;
-    if (currentStop === finish) currentStop = null;
-    done = true;
-    if (window.speechSynthesis) doSpeak(text, { onEnd, rate });
-    else onEnd?.();
+  loadBuffer(key).then(async (buf) => {
+    if (!live()) return;
+    if (!buf) return playElement();
+    // Suspended (no gesture yet) or iOS "interrupted" (after a call): try to resume, briefly;
+    // if it won't run, the <audio> element (or its browser-voice fallback) plays instead,
+    // otherwise start() would be silent and onEnd would never fire.
+    if (ctx.state !== "running") {
+      await Promise.race([ctx.resume().catch(() => {}), new Promise((r) => setTimeout(r, 300))]);
+      if (!live()) return;
+      if ((ctx.state as string) !== "running") return playElement();
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.onended = () => {
+      if (!live()) return;
+      source = null;
+      finish();
+    };
+    source = src;
+    src.start();
+    if (onProgress) {
+      const t0 = ctx.currentTime;
+      const tick = () => {
+        if (done || !live()) return;
+        onProgress(Math.min((ctx.currentTime - t0) / buf.duration, 1));
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
   });
   return true;
 }

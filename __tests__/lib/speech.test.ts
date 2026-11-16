@@ -247,9 +247,9 @@ describe("recorded voice", () => {
     vi.doMock("@/lib/audioManifest.json", () => ({ default: ["kucing"] }));
     const play = vi.fn(() => Promise.resolve());
     const created: string[] = [];
-    vi.stubGlobal("Audio", vi.fn(function (this: { play: typeof play; pause: () => void }, src: string) {
-      created.push(src);
-      this.play = play;
+    vi.stubGlobal("AudioContext", undefined); // <audio> path
+    vi.stubGlobal("Audio", vi.fn(function (this: { play: typeof play; pause: () => void; src: string }) {
+      this.play = vi.fn(() => { created.push(this.src); return play(); });
       this.pause = () => {};
     }));
     Object.defineProperty(globalThis, "speechSynthesis", {
@@ -274,9 +274,9 @@ describe("speakSyllable with word context", () => {
     vi.resetModules();
     vi.doMock("@/lib/audioManifest.json", () => ({ default: manifest }));
     const created: string[] = [];
-    vi.stubGlobal("Audio", vi.fn(function (this: { play: () => Promise<void>; pause: () => void }, src: string) {
-      created.push(src);
-      this.play = () => Promise.resolve();
+    vi.stubGlobal("AudioContext", undefined); // <audio> path
+    vi.stubGlobal("Audio", vi.fn(function (this: { play: () => Promise<void>; pause: () => void; src: string }) {
+      this.play = () => { created.push(this.src); return Promise.resolve(); };
       this.pause = () => {};
     }));
     Object.defineProperty(globalThis, "speechSynthesis", {
@@ -309,6 +309,7 @@ describe("recorded audio superseded", () => {
     vi.resetModules();
     vi.doMock("@/lib/audioManifest.json", () => ({ default: ["kucing"] }));
     const rejects: Array<(e: Error) => void> = [];
+    vi.stubGlobal("AudioContext", undefined); // <audio> path
     vi.stubGlobal("Audio", vi.fn(function (this: { play: () => Promise<void>; pause: () => void }) {
       this.play = () => new Promise<void>((_, reject) => { rejects.push(reject); });
       this.pause = () => {};
@@ -323,6 +324,68 @@ describe("recorded audio superseded", () => {
     rejects[0](new Error("AbortError"));
     await new Promise((r) => setTimeout(r, 0));
     expect(synthSpeak).not.toHaveBeenCalled();
+  });
+});
+
+describe("decoded clip cache", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.doUnmock("@/lib/audioManifest.json"); });
+
+  it("fetches and decodes a clip once, then replays it from memory", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/audioManifest.json", () => ({ default: ["kucing"] }));
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) }));
+    vi.stubGlobal("fetch", fetchMock);
+    const starts: number[] = [];
+    vi.stubGlobal("AudioContext", class {
+      currentTime = 0; state = "running"; destination = {};
+      decodeAudioData = () => Promise.resolve({ duration: 1 });
+      createBufferSource = () => ({ connect() {}, start: () => starts.push(1), stop() {}, onended: null, buffer: null });
+    });
+    vi.stubGlobal("Audio", vi.fn(function (this: object) { Object.assign(this, { play: vi.fn(() => Promise.resolve()), pause() {} }); }));
+    vi.stubGlobal("speechSynthesis", { speak: vi.fn(), cancel: vi.fn(), getVoices: () => [] });
+    const { useAppStore } = await import("@/store/useAppStore");
+    useAppStore.setState({ isMuted: false } as never);
+    const { speak, preloadAudio } = await import("@/lib/speech");
+
+    preloadAudio(["Kucing"]);
+    speak("kucing");
+    await new Promise((r) => setTimeout(r, 0));
+    speak("kucing");
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(starts).toHaveLength(2);
+  });
+});
+
+describe("Web Audio not running", () => {
+  afterEach(() => { vi.unstubAllGlobals(); vi.doUnmock("@/lib/audioManifest.json"); });
+
+  it("plays through the <audio> element when the AudioContext won't resume (iOS interrupted)", async () => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    vi.doMock("@/lib/audioManifest.json", () => ({ default: ["kucing"] }));
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) })));
+    const start = vi.fn();
+    vi.stubGlobal("AudioContext", class {
+      currentTime = 0; state = "interrupted"; destination = {};
+      resume = () => new Promise(() => {}); // never resumes
+      decodeAudioData = () => Promise.resolve({ duration: 1 });
+      createBufferSource = () => ({ connect() {}, start, stop() {}, onended: null, buffer: null });
+    });
+    const play = vi.fn(() => Promise.resolve());
+    vi.stubGlobal("Audio", vi.fn(function (this: object) { Object.assign(this, { play, pause() {} }); }));
+    vi.stubGlobal("speechSynthesis", { speak: vi.fn(), cancel: vi.fn(), getVoices: () => [] });
+    const { useAppStore } = await import("@/store/useAppStore");
+    useAppStore.setState({ isMuted: false } as never);
+    const { speak } = await import("@/lib/speech");
+
+    speak("kucing");
+    await vi.advanceTimersByTimeAsync(400);
+
+    expect(start).not.toHaveBeenCalled();
+    expect(play).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });
 
@@ -342,6 +405,7 @@ describe("playWithProgress", () => {
   it("calls onEnd when the clip is replaced or stopped, so highlights clear", async () => {
     vi.resetModules();
     vi.doMock("@/lib/audioManifest.json", () => ({ default: ["doa", "kucing"] }));
+    vi.stubGlobal("AudioContext", undefined); // <audio> path
     vi.stubGlobal("Audio", vi.fn(function (this: { play: () => Promise<void>; pause: () => void }) {
       this.play = () => new Promise<void>(() => {});
       this.pause = () => {};

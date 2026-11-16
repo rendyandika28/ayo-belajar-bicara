@@ -80,7 +80,9 @@ self.addEventListener("fetch", (event) => {
 
   // Generated assets on Cloudflare R2 (pictures, recorded voice): immutable, cache-first
   // so pictures and sounds already seen keep working offline. Skip partial (206) media responses.
-  if (url.hostname === "media.rdydika.dev" || url.hostname.endsWith(".r2.dev")) {
+  // Range requests (<audio> fallback) go straight to the network: caches.match ignores Range
+  // and would answer a full 200, which Safari's media loader rejects.
+  if ((url.hostname === "media.rdydika.dev" || url.hostname.endsWith(".r2.dev")) && !request.headers.has("range")) {
     event.respondWith(
       caches.match(request).then(
         (cached) =>

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { words, Word } from "@/data/words";
 import { useAppStore } from "@/store/useAppStore";
-import { speak } from "@/lib/speech";
+import { speak, preloadAudio } from "@/lib/speech";
 import { playCorrect, playWrong, playApplause, playPop } from "@/lib/sounds";
 import GameShell from "@/components/ui/GameShell";
 import BigButton from "@/components/ui/BigButton";
@@ -105,6 +105,8 @@ export default function BunyiKataPage() {
   useEffect(startSession, []);
 
   const currentQuestion = questions[currentIdx];
+  // Fetch this and the next item's voice now, so it plays instantly when asked for.
+  useEffect(() => preloadAudio([questions[currentIdx]?.target.word.word, questions[currentIdx + 1]?.target.word.word]), [questions, currentIdx]);
 
   const handleSelect = (idx: number) => {
     if (selectedIdx !== null || !currentQuestion) return;

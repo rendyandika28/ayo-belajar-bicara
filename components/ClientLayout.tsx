@@ -6,6 +6,8 @@ import FocusModeWrapper from "@/components/focus/FocusModeWrapper";
 import OnboardingOverlay from "@/components/OnboardingOverlay";
 import LevelNotice from "@/components/LevelNotice";
 import { useAppStore } from "@/store/useAppStore";
+import { initAudio } from "@/lib/sounds";
+import { audioUnlocked, initSpeech, unlockAudio } from "@/lib/speech";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -45,15 +47,22 @@ export default function ClientLayout({
   // Unlock Audio and Speech APIs on first interaction
   useEffect(() => {
     const unlock = () => {
-      import("@/lib/sounds").then((m) => m.initAudio());
-      import("@/lib/speech").then((m) => m.initSpeech());
-      window.removeEventListener("touchstart", unlock);
-      window.removeEventListener("click", unlock);
+      // Must run synchronously inside the gesture: iOS ignores unlocks after import().then.
+      initAudio();
+      unlockAudio();
+      initSpeech();
+      // A touchend that ends a scroll/swipe is no activation on iOS: keep trying on later taps.
+      setTimeout(() => {
+        if (!audioUnlocked()) return;
+        window.removeEventListener("touchend", unlock);
+        window.removeEventListener("click", unlock);
+      }, 100);
     };
-    window.addEventListener("touchstart", unlock, { once: true });
-    window.addEventListener("click", unlock, { once: true });
+    // touchend, not touchstart: iOS counts only touchend as user activation.
+    window.addEventListener("touchend", unlock);
+    window.addEventListener("click", unlock);
     return () => {
-      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("touchend", unlock);
       window.removeEventListener("click", unlock);
     };
   }, []);
