@@ -46,4 +46,17 @@ export const sentences: Sentence[] = [
   { id: "kal-38", text: "kami bermain di pantai" },
   { id: "kal-39", text: "ikan kecil di akuarium" },
   { id: "kal-40", text: "aku memakai sepatu baru" },
+  // Buah
+  { id: "kal-41", text: "pisang kuning" },
+  { id: "kal-42", text: "jeruk segar" },
+  { id: "kal-43", text: "anggur ungu" },
+  { id: "kal-44", text: "semangka merah" },
+  { id: "kal-45", text: "adik makan pisang" },
+  { id: "kal-46", text: "ibu kupas mangga" },
+  { id: "kal-47", text: "nanas itu manis" },
+  { id: "kal-48", text: "stroberi merah kecil" },
+  { id: "kal-49", text: "ayah membeli buah durian" },
+  { id: "kal-50", text: "aku suka makan jeruk" },
+  { id: "kal-51", text: "kakak minum jus alpukat" },
+  { id: "kal-52", text: "buah apel di keranjang" },
 ];
