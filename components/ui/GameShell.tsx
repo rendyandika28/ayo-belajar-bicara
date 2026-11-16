@@ -16,6 +16,7 @@ export default function GameShell({
   backHref = "/",
   backLabel = "Kembali ke beranda",
   onBack,
+  actions,
 }: {
   title: string;
   children: React.ReactNode;
@@ -24,6 +25,8 @@ export default function GameShell({
   backLabel?: string;
   /** In-page back (e.g. quiz → menu). When set, the top-left button calls this instead of navigating. */
   onBack?: () => void;
+  /** Extra page buttons shown left of the focus-mode button. */
+  actions?: React.ReactNode;
 }) {
   const btn = "inline-flex shrink-0 items-center justify-center w-14 h-14 rounded-full bg-surface border border-line text-ink transition-colors hover:bg-accent-soft active:bg-line";
   const homeIcon = (
@@ -56,6 +59,7 @@ export default function GameShell({
           </div>
           <h1 className="order-last col-span-2 sm:order-none sm:col-span-1 min-w-0 font-heading text-2xl sm:text-3xl font-bold text-ink text-center" style={{ overflowWrap: "break-word" }}>{title}</h1>
           <div className="flex items-center gap-2 justify-end">
+            {actions}
             {focusMode && <FocusModeButton />}
             <StarCounter />
           </div>

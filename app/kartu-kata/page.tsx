@@ -28,11 +28,38 @@ export default function KartuKataPage() {
   const learnedRef = useRef<Set<string>>(new Set());
 
   // Combine built-in words with custom words and filter by category
+  // "Semua" can be shuffled like a music playlist; order is made on tap, so SSR stays deterministic.
+  const [shuffleOrder, setShuffleOrder] = useState<number[] | null>(null);
   const allWords = useMemo(() => {
     const combined = [...words, ...customWords];
-    if (selectedCategory === "semua") return combined;
-    return combined.filter((w) => w.category === selectedCategory);
-  }, [selectedCategory, customWords]);
+    if (selectedCategory !== "semua") return combined.filter((w) => w.category === selectedCategory);
+    if (!shuffleOrder || shuffleOrder.length !== combined.length) return combined;
+    return shuffleOrder.map((i) => combined[i]);
+  }, [selectedCategory, customWords, shuffleOrder]);
+
+  // Label pops out for a moment after each tap, then collapses back to icon only.
+  const [showShuffleLabel, setShowShuffleLabel] = useState(false);
+  const labelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (labelTimer.current) clearTimeout(labelTimer.current); }, []);
+
+  const toggleShuffle = () => {
+    playPop();
+    setShowShuffleLabel(true);
+    if (labelTimer.current) clearTimeout(labelTimer.current);
+    labelTimer.current = setTimeout(() => setShowShuffleLabel(false), 2000);
+    if (shuffleOrder) {
+      setShuffleOrder(null);
+    } else {
+      const order = Array.from({ length: words.length + customWords.length }, (_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      setShuffleOrder(order);
+    }
+    setCurrentIndex(0);
+    setDirection(0);
+  };
 
   // Reset index when category changes
   useEffect(() => {
@@ -110,8 +137,37 @@ export default function KartuKataPage() {
     }),
   };
 
+  const shuffleButton = selectedCategory === "semua" && (
+    <button
+      type="button"
+      onClick={toggleShuffle}
+      aria-pressed={!!shuffleOrder}
+      aria-label={shuffleOrder ? "Acak aktif, tekan untuk urut" : "Acak urutan kata"}
+      title={shuffleOrder ? "Acak" : "Urut"}
+      className={`inline-flex shrink-0 items-center justify-center h-11 min-w-11 px-[11px] rounded-full border transition-colors ${
+        shuffleOrder ? "bg-accent-strong text-on-accent border-accent-strong" : "bg-surface text-ink border-line hover:bg-accent-soft"
+      }`}
+    >
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M16 3h5v5" />
+        <path d="M4 20 21 3" />
+        <path d="M21 16v5h-5" />
+        <path d="m15 15 6 6" />
+        <path d="M4 4l5 5" />
+      </svg>
+      <span
+        aria-hidden="true"
+        className={`overflow-hidden whitespace-nowrap font-heading text-sm font-semibold transition-all duration-300 ease-out ${
+          showShuffleLabel ? "max-w-24 ml-2 opacity-100" : "max-w-0 ml-0 opacity-0"
+        }`}
+      >
+        {shuffleOrder ? "Acak" : "Urut"}
+      </span>
+    </button>
+  );
+
   return (
-    <GameShell title="Kartu Kata">
+    <GameShell title="Kartu Kata" actions={shuffleButton}>
       <GameTutorial
         gameKey="kartu-kata"
         steps={[
@@ -179,7 +235,7 @@ export default function KartuKataPage() {
                       {currentWord.word}
                     </h2>
 
-                    <div className="flex items-center gap-2 flex-wrap justify-center">
+                    <div className="word-row flex items-center gap-2 flex-wrap justify-center">
                       {currentWord.syllables.map((syl, i) => (
                         <span key={i} className="flex items-center gap-2">
                           <button
@@ -189,11 +245,7 @@ export default function KartuKataPage() {
                             }}
                             className="bg-accent-soft text-ink font-heading text-xl px-4 rounded-2xl min-w-[56px] min-h-[48px] hover:bg-line active:bg-line transition-colors"
                           >
-                            <span className="word-text">{syl}</span>
-                            <svg className="word-icon mx-auto" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M11 5 6 9H3v6h3l5 4z" />
-                              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-                            </svg>
+                            {syl}
                           </button>
                           {i < currentWord.syllables.length - 1 && (
                             <span className="text-ink-muted font-body text-lg" aria-hidden="true">

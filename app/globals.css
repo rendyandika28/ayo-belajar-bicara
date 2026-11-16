@@ -117,8 +117,7 @@ body.calm-mode-active * {
 }
 
 /* "Sembunyikan Tulisan": word text is visually hidden but still read by screen readers */
-.word-icon { display: none; }
-body.hide-text-active .word-icon { display: block; }
+body.hide-text-active .word-row { display: none; }
 body.hide-text-active .word-text {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
